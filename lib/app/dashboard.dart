@@ -55,30 +55,30 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
         drawer: Drawer(
-          backgroundColor: Colors.grey[900],
+          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               UserAccountsDrawerHeader(
-                accountName: Text('John Doe', style: TextStyle(fontSize: 14, color: Colors.white)),
-                accountEmail: Text('johndoe@example.com', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                accountName: Text('John Doe', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                accountEmail: Text('johndoe@example.com', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.black54)),
                 currentAccountPicture: CircleAvatar(
                   backgroundImage: AssetImage('assets/profile_picture.jpg'),
                   radius: 30,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey[800],
+                  color: isDarkMode ? Colors.grey[800] : Colors.blue.shade400,
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.settings, size: 20, color: Colors.white),
-                title: Text('Settings', style: TextStyle(fontSize: 14, color: Colors.white)),
+                leading: Icon(Icons.settings, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Settings', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.info, size: 20, color: Colors.white),
-                title: Text('About', style: TextStyle(fontSize: 14, color: Colors.white)),
+                leading: Icon(Icons.info, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('About', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
                 },
               ),
