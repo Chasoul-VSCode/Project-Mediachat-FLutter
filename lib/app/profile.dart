@@ -11,7 +11,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _userName = 'User Name';
+  String _userName = 'Username';
   File? _imageFile;
 
   @override
