@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 
 class CommunityPage extends StatelessWidget {
-  const CommunityPage({Key? key}) : super(key: key);
+  final bool isDarkMode;
+
+  const CommunityPage({Key? key, required this.isDarkMode}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: isDarkMode ? Colors.black : Colors.white,
       body: ListView(
         children: [
           ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.teal,
-              child: Icon(Icons.people, color: Colors.white),
+              child: Icon(Icons.people, color: Colors.white, size: 20),
             ),
-            title: Text('New community'),
-            onTap: () {
-              // TODO: Implement new community creation
-            },
+            title: Text('New community', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+            onTap: () {},
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
-          Divider(),
+          Divider(height: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[300]),
           _buildCommunityItem(
             'Flutter Developers',
             'You, John, Jane: Hello everyone!',
@@ -43,36 +45,42 @@ class CommunityPage extends StatelessWidget {
     return ExpansionTile(
       leading: CircleAvatar(
         backgroundImage: NetworkImage(imageUrl),
+        radius: 20,
       ),
-      title: Text(name),
-      subtitle: Text(lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(name, style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+      subtitle: Text(
+        lastMessage,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+      ),
+      childrenPadding: EdgeInsets.symmetric(horizontal: 16),
       children: [
         ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.grey[300],
-            child: Icon(Icons.announcement, color: Colors.grey[700]),
+            backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+            child: Icon(Icons.announcement, color: isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
+            radius: 18,
           ),
-          title: Text('Announcements'),
-          onTap: () {
-            // TODO: Navigate to announcements
-          },
+          title: Text('Announcements', style: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white : Colors.black)),
+          onTap: () {},
+          contentPadding: EdgeInsets.symmetric(vertical: 4),
         ),
         ListTile(
           leading: CircleAvatar(
-            backgroundColor: Colors.grey[300],
-            child: Icon(Icons.group, color: Colors.grey[700]),
+            backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+            child: Icon(Icons.group, color: isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
+            radius: 18,
           ),
-          title: Text('General Group'),
-          onTap: () {
-            // TODO: Navigate to general group
-          },
+          title: Text('General Group', style: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white : Colors.black)),
+          onTap: () {},
+          contentPadding: EdgeInsets.symmetric(vertical: 4),
         ),
         ListTile(
-          leading: Icon(Icons.add_circle, color: Colors.teal),
-          title: Text('Create new group'),
-          onTap: () {
-            // TODO: Implement new group creation
-          },
+          leading: Icon(Icons.add_circle, color: Colors.teal, size: 18),
+          title: Text('Create new group', style: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white : Colors.black)),
+          onTap: () {},
+          contentPadding: EdgeInsets.symmetric(vertical: 4),
         ),
       ],
     );

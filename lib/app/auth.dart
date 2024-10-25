@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'profile.dart'; // Import the profile.dart file
+import 'profile.dart';
 
 class AuthPage extends StatelessWidget {
   const AuthPage({Key? key}) : super(key: key);
@@ -19,36 +19,36 @@ class AuthPage extends StatelessWidget {
           child: Center(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 40.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.chat,
-                      size: 120,
+                      size: 60,
                       color: Colors.blue.shade700,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 16),
                     const Text(
-                      'Media CHat',
+                      'Media Chat',
                       style: TextStyle(
-                        fontSize: 36,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     const Text(
                       'Sign in to continue',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 14,
                         color: Colors.black54,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 30),
                     TextField(
                       keyboardType: TextInputType.phone,
                       style: const TextStyle(color: Colors.black87),
@@ -56,23 +56,23 @@ class AuthPage extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: 'Phone Number',
                         hintStyle: TextStyle(color: Colors.black54),
-                        prefixIcon: const Icon(Icons.phone, color: Colors.black54),
+                        prefixIcon: const Icon(Icons.phone, color: Colors.black54, size: 20),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(color: Colors.blue.shade200),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
                         ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Navigate to the ProfilePage when the login button is pressed
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (context) => ProfilePage()),
                           );
@@ -81,25 +81,24 @@ class AuthPage extends StatelessWidget {
                           backgroundColor: Colors.blue.shade400,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           elevation: 0,
                         ),
                         child: const Text(
                           'Login',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     TextButton(
                       onPressed: () {
-                        // TODO: Implement sign up logic
                       },
                       child: Text(
                         'Don\'t have an account? Sign Up',
-                        style: TextStyle(color: Colors.blue.shade700),
+                        style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
                       ),
                     ),
                   ],

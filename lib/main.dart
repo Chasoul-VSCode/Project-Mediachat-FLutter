@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app/auth.dart'; // Import the auth.dart file
+import 'app/auth.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,10 +16,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const AuthPage(), // Change the home page to AuthPage
-      debugShowCheckedModeBanner: false, // Remove debug banner
+      home: const AuthPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-// Remove the MyHomePage and _MyHomePageState classes as they are no longer needed
