@@ -27,7 +27,7 @@ class _DashboardPageState extends State<DashboardPage> {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Media Chat', 
+          title: Text('KoKit', 
             style: TextStyle(
               fontSize: 18, 
               color: isDarkMode ? Colors.white : Colors.black
