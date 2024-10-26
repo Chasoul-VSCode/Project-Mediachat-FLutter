@@ -60,7 +60,7 @@ class StatusPage extends StatelessWidget {
         },
         backgroundColor: isDarkMode ? Colors.tealAccent[400] : Colors.blue,
         mini: true,
-        child: Icon(Icons.add, size: 20),
+        child: const Icon(Icons.add, size: 20),
       ),
     );
   }

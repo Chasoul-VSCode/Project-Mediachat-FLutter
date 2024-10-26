@@ -47,7 +47,7 @@ class CallPage extends StatelessWidget {
         onPressed: () {},
         backgroundColor: Colors.green,
         mini: true,
-        child: Icon(Icons.add_call, size: 20),
+        child: const Icon(Icons.add_call, size: 20),
       ),
     );
   }

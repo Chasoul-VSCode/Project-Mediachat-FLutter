@@ -7,6 +7,7 @@ class ChatPage extends StatefulWidget {
   const ChatPage({Key? key, required this.isDarkMode}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _ChatPageState createState() => _ChatPageState();
 }
 
@@ -89,7 +90,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         },
         backgroundColor: iconColor,
         mini: true,
-        child: Icon(Icons.add, size: 20),
+        child: const Icon(Icons.add, size: 20),
       ),
     );
   }

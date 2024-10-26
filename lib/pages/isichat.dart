@@ -7,6 +7,7 @@ class IsiChatPage extends StatefulWidget {
   const IsiChatPage({Key? key, required this.userName, required this.isDarkMode}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _IsiChatPageState createState() => _IsiChatPageState();
 }
 
