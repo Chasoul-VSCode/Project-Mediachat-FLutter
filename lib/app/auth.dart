@@ -52,7 +52,7 @@ class AuthPage extends StatelessWidget {
                     const SizedBox(height: 30),
                     Row(
                       children: [
-                        Container(
+                        SizedBox(
                           width: 80,
                           child: DropdownButtonFormField<String>(
                             decoration: InputDecoration(
@@ -64,19 +64,19 @@ class AuthPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
                               ),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                             ),
                             items: ['+62', '+1', '+44', '+81'].map((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
-                                child: Text(value, style: TextStyle(fontSize: 14)),
+                                child: Text(value, style: const TextStyle(fontSize: 14)),
                               );
                             }).toList(),
                             onChanged: (_) {},
                             value: '+62',
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             keyboardType: TextInputType.phone,
@@ -84,7 +84,7 @@ class AuthPage extends StatelessWidget {
                             textAlign: TextAlign.left,
                             decoration: InputDecoration(
                               hintText: 'Phone Number',
-                              hintStyle: TextStyle(color: Colors.black54),
+                              hintStyle: const TextStyle(color: Colors.black54),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide(color: Colors.blue.shade200),
@@ -93,7 +93,7 @@ class AuthPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
                               ),
-                              contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                             ),
                           ),
                         ),
@@ -105,7 +105,7 @@ class AuthPage extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => ProfilePage()),
+                            MaterialPageRoute(builder: (context) => const ProfilePage()),
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -127,7 +127,7 @@ class AuthPage extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => RegistrationPage()),
+                          MaterialPageRoute(builder: (context) => const RegistrationPage()),
                         );
                       },
                       child: Text(

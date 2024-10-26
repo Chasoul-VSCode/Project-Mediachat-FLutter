@@ -14,7 +14,7 @@ class StatusPage extends StatelessWidget {
           ListTile(
             leading: Stack(
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 25,
                   backgroundImage: AssetImage('assets/default_profile.png'),
                 ),
@@ -22,7 +22,7 @@ class StatusPage extends StatelessWidget {
                   bottom: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.all(1),
+                    padding: const EdgeInsets.all(1),
                     decoration: BoxDecoration(
                       color: isDarkMode ? Colors.tealAccent[400] : Colors.blue,
                       shape: BoxShape.circle,
@@ -58,9 +58,9 @@ class StatusPage extends StatelessWidget {
         onPressed: () {
           // Add new status logic
         },
-        child: Icon(Icons.add, size: 20),
         backgroundColor: isDarkMode ? Colors.tealAccent[400] : Colors.blue,
         mini: true,
+        child: Icon(Icons.add, size: 20),
       ),
     );
   }

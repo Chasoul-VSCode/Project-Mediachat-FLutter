@@ -60,7 +60,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   onTap: _toggleSearch,
                   child: Icon(Icons.search, color: iconColor, size: 20),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: SizeTransition(
                     sizeFactor: _animation,
@@ -87,9 +87,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       floatingActionButton: FloatingActionButton(
         onPressed: () {
         },
-        child: Icon(Icons.add, size: 20),
         backgroundColor: iconColor,
         mini: true,
+        child: Icon(Icons.add, size: 20),
       ),
     );
   }
@@ -106,7 +106,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           title: Text('User ${index + 1}', style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
           subtitle: Text('Last message from User ${index + 1}', style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
           trailing: Text('12:00 PM', style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           onTap: () {
             Navigator.push(
               context,

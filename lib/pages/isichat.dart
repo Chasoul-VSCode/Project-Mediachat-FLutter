@@ -43,7 +43,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
               backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${widget.userName}'),
               radius: 16,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 widget.userName,
@@ -90,7 +90,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Widget _buildMessageComposer() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.0),
+      padding: const EdgeInsets.symmetric(horizontal: 6.0),
       color: widget.isDarkMode ? Colors.grey[900] : Colors.white,
       child: Row(
         children: [
@@ -143,14 +143,14 @@ class ChatMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
+      margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
       child: Row(
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isMe) CircleAvatar(child: Text('U'), radius: 12),
+          if (!isMe) const CircleAvatar(radius: 12, child: Text('U')),
           Container(
-            padding: EdgeInsets.all(8.0),
-            constraints: BoxConstraints(maxWidth: 200),
+            padding: const EdgeInsets.all(8.0),
+            constraints: const BoxConstraints(maxWidth: 200),
             decoration: BoxDecoration(
               color: isMe
                   ? (isDarkMode ? Colors.blue[700] : Colors.blue[100])
@@ -162,8 +162,8 @@ class ChatMessage extends StatelessWidget {
               style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 12),
             ),
           ),
-          if (isMe) SizedBox(width: 6),
-          if (isMe) CircleAvatar(child: Text('M'), radius: 12),
+          if (isMe) const SizedBox(width: 6),
+          if (isMe) const CircleAvatar(radius: 12, child: Text('M')),
         ],
       ),
     );

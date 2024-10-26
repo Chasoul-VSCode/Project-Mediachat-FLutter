@@ -16,14 +16,14 @@ class CallPage extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
-            leading: CircleAvatar(
+            leading: const CircleAvatar(
               backgroundColor: Colors.green,
               radius: 16,
               child: Icon(Icons.link, color: Colors.white, size: 18),
             ),
             title: Text('Create call link', style: TextStyle(fontSize: 14, color: textColor)),
             subtitle: Text('Share a link for your WhatsApp call', style: TextStyle(fontSize: 12, color: subtitleColor)),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             onTap: () {},
           ),
           Padding(
@@ -45,9 +45,9 @@ class CallPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        child: Icon(Icons.add_call, size: 20),
         backgroundColor: Colors.green,
         mini: true,
+        child: Icon(Icons.add_call, size: 20),
       ),
     );
   }
@@ -65,12 +65,12 @@ class CallPage extends StatelessWidget {
       subtitle: Row(
         children: [
           Icon(icon, size: 14, color: iconColor),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(time, style: TextStyle(fontSize: 12, color: subtitleColor)),
         ],
       ),
-      trailing: Icon(Icons.call, color: Colors.green, size: 18),
-      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      trailing: const Icon(Icons.call, color: Colors.green, size: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       onTap: () {},
     );
   }

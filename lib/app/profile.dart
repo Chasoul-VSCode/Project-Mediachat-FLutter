@@ -80,15 +80,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => DashboardPage()),
+                            MaterialPageRoute(builder: (context) => const DashboardPage()),
                           );
                         },
-                        child: const Text('Next'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade400,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 10), // Reduced from 12
                         ),
+                        child: const Text('Next'),
                       ),
                     ),
                   ],
@@ -102,8 +102,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _changeProfilePicture() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     
     if (image != null) {
       setState(() {

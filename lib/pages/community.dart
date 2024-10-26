@@ -12,13 +12,13 @@ class CommunityPage extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
-            leading: CircleAvatar(
+            leading: const CircleAvatar(
               backgroundColor: Colors.teal,
               child: Icon(Icons.people, color: Colors.white, size: 20),
             ),
             title: Text('New community', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
             onTap: () {},
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
           Divider(height: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[300]),
           _buildCommunityItem(
@@ -54,33 +54,33 @@ class CommunityPage extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
       ),
-      childrenPadding: EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         ListTile(
           leading: CircleAvatar(
             backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-            child: Icon(Icons.announcement, color: isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
             radius: 18,
+            child: Icon(Icons.announcement, color: isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
           ),
           title: Text('Announcements', style: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white : Colors.black)),
           onTap: () {},
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(vertical: 4),
         ),
         ListTile(
           leading: CircleAvatar(
             backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-            child: Icon(Icons.group, color: isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
             radius: 18,
+            child: Icon(Icons.group, color: isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
           ),
           title: Text('General Group', style: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white : Colors.black)),
           onTap: () {},
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(vertical: 4),
         ),
         ListTile(
-          leading: Icon(Icons.add_circle, color: Colors.teal, size: 18),
+          leading: const Icon(Icons.add_circle, color: Colors.teal, size: 18),
           title: Text('Create new group', style: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white : Colors.black)),
           onTap: () {},
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(vertical: 4),
         ),
       ],
     );

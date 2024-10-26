@@ -44,10 +44,10 @@ class _DashboardPageState extends State<DashboardPage> {
               color: isDarkMode ? Colors.white : Colors.black,
             ),
             IconButton(
-              icon: Icon(Icons.logout, size: 20),
+              icon: const Icon(Icons.logout, size: 20),
               onPressed: () {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => AuthPage()),
+                  MaterialPageRoute(builder: (context) => const AuthPage()),
                 );
               },
               color: isDarkMode ? Colors.white : Colors.black,
@@ -62,7 +62,7 @@ class _DashboardPageState extends State<DashboardPage> {
               UserAccountsDrawerHeader(
                 accountName: Text('John Doe', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 accountEmail: Text('johndoe@example.com', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.black54)),
-                currentAccountPicture: CircleAvatar(
+                currentAccountPicture: const CircleAvatar(
                   backgroundImage: AssetImage('assets/profile_picture.jpg'),
                   radius: 30,
                 ),
@@ -97,7 +97,7 @@ class _DashboardPageState extends State<DashboardPage> {
           color: isDarkMode ? Colors.grey[900] : Colors.white,
           height: 60,
           child: TabBar(
-            tabs: [
+            tabs: const [
               Tab(icon: Icon(Icons.chat, size: 20), text: 'Chat'),
               Tab(icon: Icon(Icons.circle, size: 20), text: 'Status'),
               Tab(icon: Icon(Icons.group, size: 20), text: 'Community'),
@@ -105,8 +105,8 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
             labelColor: isDarkMode ? Colors.white : Colors.blue.shade400,
             unselectedLabelColor: isDarkMode ? Colors.grey[400] : Colors.grey,
-            labelStyle: TextStyle(fontSize: 12),
-            unselectedLabelStyle: TextStyle(fontSize: 12),
+            labelStyle: const TextStyle(fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
           ),
         ),
       ),
