@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:project_chatapp_flutter/app/registration.dart';
-import 'profile.dart';
+import 'auth.dart';
 
-class AuthPage extends StatelessWidget {
-  const AuthPage({Key? key}) : super(key: key);
+class RegistrationPage extends StatelessWidget {
+  const RegistrationPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +25,13 @@ class AuthPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.chat,
+                      Icons.app_registration,
                       size: 60,
                       color: Colors.blue.shade700,
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'KoKit',
+                      'KoKit Registration',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -42,7 +41,7 @@ class AuthPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Wellcome to Komunikasi Kita',
+                      'Create your account for Komunikasi Kita',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.black54,
@@ -50,6 +49,24 @@ class AuthPage extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 30),
+                    TextField(
+                      keyboardType: TextInputType.name,
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Full Name',
+                        hintStyle: TextStyle(color: Colors.black54),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.blue.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Container(
@@ -99,14 +116,30 @@ class AuthPage extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      obscureText: true,
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        hintStyle: TextStyle(color: Colors.black54),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.blue.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => ProfilePage()),
-                          );
+                          // Handle registration logic here
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade400,
@@ -118,7 +151,7 @@ class AuthPage extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Login',
+                          'Register',
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -127,11 +160,11 @@ class AuthPage extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => RegistrationPage()),
+                          MaterialPageRoute(builder: (context) => AuthPage()),
                         );
                       },
                       child: Text(
-                        'Don\'t have an account? Sign Up',
+                        'Already have an account? Login',
                         style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
                       ),
                     ),
