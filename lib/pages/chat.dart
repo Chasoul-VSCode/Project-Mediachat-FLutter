@@ -1,13 +1,17 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
-import 'isichat.dart'; // Import the IsiChatPage
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'isichat.dart';
 
 class ChatPage extends StatefulWidget {
   final bool isDarkMode;
+  final int userId;
 
-  const ChatPage({Key? key, required this.isDarkMode}) : super(key: key);
+  const ChatPage({Key? key, required this.isDarkMode, required this.userId}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
   _ChatPageState createState() => _ChatPageState();
 }
 
@@ -15,6 +19,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _isSearchVisible = false;
+  List<dynamic> _chats = [];
 
   @override
   void initState() {
@@ -24,6 +29,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
+    _fetchChats();
   }
 
   @override
@@ -41,6 +47,23 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _controller.reverse();
       }
     });
+  }
+
+  Future<void> _fetchChats() async {
+    try {
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _chats = data['data'];
+        });
+      } else {
+        // Handle error
+        print('Failed to load chats: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching chats: $e');
+    }
   }
 
   @override
@@ -87,6 +110,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Add new chat functionality
         },
         backgroundColor: iconColor,
         mini: true,
@@ -97,16 +121,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Widget _buildChatTab() {
     return ListView.builder(
-      itemCount: 10,
+      itemCount: _chats.length,
       itemBuilder: (context, index) {
+        final chat = _chats[index];
         return ListTile(
           leading: CircleAvatar(
-            backgroundImage: NetworkImage('https://via.placeholder.com/150?text=User${index + 1}'),
+            backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${chat['username']}'),
             radius: 20,
           ),
-          title: Text('User ${index + 1}', style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
-          subtitle: Text('Last message from User ${index + 1}', style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-          trailing: Text('12:00 PM', style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
+          title: Text(chat['username'], style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
+          subtitle: Text(chat['chat'], style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
+          trailing: Text(chat['date'], style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           onTap: () {
             Navigator.push(
@@ -114,7 +139,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               MaterialPageRoute(
                 builder: (context) => IsiChatPage(
                   isDarkMode: widget.isDarkMode,
-                  userName: 'User ${index + 1}',
+                  userName: chat['username'],
                 ),
               ),
             );

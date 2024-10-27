@@ -7,6 +7,8 @@ import 'auth.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
+  
+  get userId => null;
 
   @override
   // ignore: library_private_types_in_public_api
@@ -15,6 +17,8 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   bool isDarkMode = false;
+  
+  get userId => null;
 
   void toggleTheme() {
     setState(() {
@@ -88,7 +92,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         body: TabBarView(
           children: [
-            ChatPage(isDarkMode: isDarkMode),
+            ChatPage(isDarkMode: isDarkMode, userId: widget.userId ?? -1),
             StatusPage(isDarkMode: isDarkMode),
             CommunityPage(isDarkMode: isDarkMode),
             CallPage(isDarkMode: isDarkMode),
