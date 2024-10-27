@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'isichat.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChatPage extends StatefulWidget {
   final bool isDarkMode;
@@ -20,6 +21,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   late Animation<double> _animation;
   bool _isSearchVisible = false;
   List<dynamic> _chats = [];
+  late int _loggedInUserId;
 
   @override
   void initState() {
@@ -29,6 +31,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _loggedInUserId = int.parse(prefs.getString('userId') ?? '0');
     _fetchChats();
   }
 
@@ -54,8 +62,25 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final allChats = data['data'] as List;
+        
+        // Filter out chats from the logged-in user
+        final filteredChats = allChats.where((chat) => 
+          chat['id_users'] != _loggedInUserId
+        ).toList();
+
+        // Remove duplicates based on id_users, keeping only the most recent chat
+        final Map<int, dynamic> uniqueChats = {};
+        for (var chat in filteredChats) {
+          final userId = chat['id_users'];
+          if (!uniqueChats.containsKey(userId) || 
+              DateTime.parse(chat['date']).isAfter(DateTime.parse(uniqueChats[userId]['date']))) {
+            uniqueChats[userId] = chat;
+          }
+        }
+
         setState(() {
-          _chats = data['data'];
+          _chats = uniqueChats.values.toList();
         });
       } else {
         // Handle error

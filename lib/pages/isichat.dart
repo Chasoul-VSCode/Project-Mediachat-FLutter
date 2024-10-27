@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class IsiChatPage extends StatefulWidget {
   final String userName;
@@ -18,28 +19,47 @@ class IsiChatPage extends StatefulWidget {
 class _IsiChatPageState extends State<IsiChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
+  late int _userId;
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _fetchChatMessages();
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userId = prefs.getString('userId') != null
+          ? int.parse(prefs.getString('userId')!)
+          : widget.userId;
+    });
   }
 
   Future<void> _fetchChatMessages() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats/${widget.userId}'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Chats fetched successfully') {
           final chatsData = data['data'] as List;
           setState(() {
             _messages.clear(); // Clear existing messages
-            _messages.addAll(chatsData.map((chatData) => ChatMessage(
-              text: chatData['chat'],
-              date: DateTime.parse(chatData['date']),
-              isMe: chatData['id_users'].toString() == widget.userId.toString(),
-              isDarkMode: widget.isDarkMode,
-            )));
+            for (var chatData in chatsData) {
+              if (chatData['id_users'] == _userId || chatData['username'] == widget.userName) {
+                if (chatData['id_users'] != _userId) {
+                }
+                _messages.add(ChatMessage(
+                  text: chatData['chat'],
+                  date: DateTime.parse(chatData['date']),
+                  isMe: chatData['id_users'] == _userId,
+                  isDarkMode: widget.isDarkMode,
+                  userName: chatData['username'],
+                ));
+              }
+            }
+            _messages.sort((a, b) => b.date.compareTo(a.date)); // Sort messages by date
           });
         }
       } else {
@@ -157,7 +177,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, dynamic>{
-          'id_users': widget.userId,
+          'id_users': _userId,
           'chat': message,
         }),
       );
@@ -179,8 +199,16 @@ class ChatMessage extends StatelessWidget {
   final DateTime date;
   final bool isMe;
   final bool isDarkMode;
+  final String userName;
 
-  const ChatMessage({Key? key, required this.text, required this.date, required this.isMe, required this.isDarkMode}) : super(key: key);
+  const ChatMessage({
+    Key? key,
+    required this.text,
+    required this.date,
+    required this.isMe,
+    required this.isDarkMode,
+    required this.userName,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -190,12 +218,24 @@ class ChatMessage extends StatelessWidget {
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMe) const CircleAvatar(radius: 12, child: Text('U')),
+          if (!isMe) CircleAvatar(radius: 12, child: Text(userName[0])),
           if (!isMe) const SizedBox(width: 6),
           Flexible(
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
+                if (!isMe)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Text(
+                      userName,
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 Container(
                   padding: const EdgeInsets.all(8.0),
                   constraints: const BoxConstraints(maxWidth: 200),
@@ -221,7 +261,7 @@ class ChatMessage extends StatelessWidget {
             ),
           ),
           if (isMe) const SizedBox(width: 6),
-          if (isMe) const CircleAvatar(radius: 12, child: Text('M')),
+          if (isMe) CircleAvatar(radius: 12, child: Text('M')),
         ],
       ),
     );
