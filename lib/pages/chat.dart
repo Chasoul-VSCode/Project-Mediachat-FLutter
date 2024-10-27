@@ -139,7 +139,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               MaterialPageRoute(
                 builder: (context) => IsiChatPage(
                   isDarkMode: widget.isDarkMode,
-                  userName: chat['username'],
+                  userName: chat['username'], userId: widget.userId,
                 ),
               ),
             );

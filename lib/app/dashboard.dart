@@ -4,11 +4,13 @@ import 'package:project_chatapp_flutter/pages/community.dart';
 import '../pages/chat.dart';
 import '../pages/status.dart';
 import 'auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
-  
-  get userId => null;
+  final int userId;
+  const DashboardPage({Key? key, required this.userId}) : super(key: key);
 
   @override
   // ignore: library_private_types_in_public_api
@@ -17,8 +19,39 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   bool isDarkMode = false;
-  
-  get userId => null;
+  String username = '';
+  String phoneNumber = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+      
+      if (userId == null) {
+        print('User ID not found in SharedPreferences');
+        return;
+      }
+
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/$userId'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          username = data['username'] ?? '';
+          phoneNumber = data['nomor_hp'] ?? '';
+        });
+      } else {
+        print('Failed to load user data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+    }
+  }
 
   void toggleTheme() {
     setState(() {
@@ -50,7 +83,10 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             IconButton(
               icon: const Icon(Icons.logout, size: 20),
-              onPressed: () {
+              onPressed: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.remove('userId');
+                // ignore: use_build_context_synchronously
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => const AuthPage()),
                 );
@@ -65,8 +101,8 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: EdgeInsets.zero,
             children: [
               UserAccountsDrawerHeader(
-                accountName: Text('John Doe', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
-                accountEmail: Text('johndoe@example.com', style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.black54)),
+                accountName: Text(username, style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                accountEmail: Text(phoneNumber, style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.black54)),
                 currentAccountPicture: const CircleAvatar(
                   backgroundImage: AssetImage('assets/profile_picture.jpg'),
                   radius: 30,
@@ -79,12 +115,14 @@ class _DashboardPageState extends State<DashboardPage> {
                 leading: Icon(Icons.settings, size: 20, color: isDarkMode ? Colors.white : Colors.black),
                 title: Text('Settings', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
+                  // Implement settings functionality
                 },
               ),
               ListTile(
                 leading: Icon(Icons.info, size: 20, color: isDarkMode ? Colors.white : Colors.black),
                 title: Text('About', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
+                  // Implement about functionality
                 },
               ),
             ],
@@ -92,7 +130,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         body: TabBarView(
           children: [
-            ChatPage(isDarkMode: isDarkMode, userId: widget.userId ?? -1),
+            ChatPage(isDarkMode: isDarkMode, userId: widget.userId),
             StatusPage(isDarkMode: isDarkMode),
             CommunityPage(isDarkMode: isDarkMode),
             CallPage(isDarkMode: isDarkMode),

@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
+  
+  get userId => null;
 
   @override
   // ignore: library_private_types_in_public_api
@@ -123,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const DashboardPage()),
+                            MaterialPageRoute(builder: (context) => DashboardPage(userId: widget.userId ?? 0)),
                           );
                         },
                         style: ElevatedButton.styleFrom(
