@@ -52,7 +52,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
                 }
                 _messages.add(ChatMessage(
                   text: chatData['chat'],
-                  date: DateTime.parse(chatData['date']),
+                  date: DateTime.parse(chatData['date']).toLocal(),
                   isMe: chatData['id_users'] == _userId,
                   isDarkMode: widget.isDarkMode,
                   userName: chatData['username'],
@@ -171,6 +171,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Future<void> _sendMessage(String message) async {
     try {
+      final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
       final response = await http.post(
         Uri.parse('http://192.168.1.7:3000/api/chats'),
         headers: <String, String>{
@@ -179,6 +180,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
         body: jsonEncode(<String, dynamic>{
           'id_users': _userId,
           'chat': message,
+          'date': jakartaTime.toIso8601String(),
         }),
       );
 

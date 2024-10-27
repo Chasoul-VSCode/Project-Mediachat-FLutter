@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'isichat.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart'; // Add this import for date formatting
 
 class ChatPage extends StatefulWidget {
   final bool isDarkMode;
@@ -149,6 +150,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       itemCount: _chats.length,
       itemBuilder: (context, index) {
         final chat = _chats[index];
+        final DateTime chatDate = DateTime.parse(chat['date']);
+        final String formattedTime = DateFormat('HH:mm').format(chatDate); // Format time as HH:mm
         return ListTile(
           leading: CircleAvatar(
             backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${chat['username']}'),
@@ -156,7 +159,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ),
           title: Text(chat['username'], style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
           subtitle: Text(chat['chat'], style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-          trailing: Text(chat['date'], style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
+          trailing: Text(formattedTime, style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           onTap: () {
             Navigator.push(
