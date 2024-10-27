@@ -5,6 +5,7 @@ import 'package:project_chatapp_flutter/app/registration.dart';
 import 'profile.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({Key? key}) : super(key: key);
@@ -42,6 +43,16 @@ class _AuthPageState extends State<AuthPage> {
       // Login successful
       final responseData = jsonDecode(response.body);
       print('Login successful: ${responseData['message']}');
+      
+      // Save user ID to SharedPreferences
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userId', responseData['user']['id_users'].toString());
+      } catch (e) {
+        print('Error saving user ID to SharedPreferences: $e');
+        // Handle the error, maybe show a message to the user
+      }
+      
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ProfilePage()),
       );

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dashboard.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -14,6 +17,45 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   String _userName = 'Username';
   File? _imageFile;
+  String _userId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+      if (userId != null && userId.isNotEmpty) {
+        setState(() {
+          _userId = userId;
+        });
+        await _fetchUserData();
+      } else {
+        print('User ID not found in SharedPreferences');
+        // Handle the case when userId is not available
+      }
+    } catch (e) {
+      print('Error loading user ID: $e');
+      // Handle any errors that occur during the process
+    }
+  }
+
+  Future<void> _fetchUserData() async {
+    final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/$_userId'));
+    if (response.statusCode == 200) {
+      final userData = json.decode(response.body);
+      setState(() {
+        _userName = userData['username'] ?? 'Username';
+      });
+    } else {
+      // Handle error
+      print('Failed to load user data');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,13 +177,28 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             TextButton(
               child: const Text('Save'),
-              onPressed: () {
+              onPressed: () async {
                 if (newName.isNotEmpty) {
-                  setState(() {
-                    _userName = newName;
-                  });
+                  final response = await http.put(
+                    Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
+                    headers: <String, String>{
+                      'Content-Type': 'application/json; charset=UTF-8',
+                    },
+                    body: jsonEncode(<String, String>{
+                      'username': newName,
+                    }),
+                  );
+
+                  if (response.statusCode == 200) {
+                    setState(() {
+                      _userName = newName;
+                    });
+                    Navigator.of(context).pop();
+                  } else {
+                    // Handle error
+                    print('Failed to update username');
+                  }
                 }
-                Navigator.of(context).pop();
               },
             ),
           ],
