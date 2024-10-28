@@ -32,7 +32,7 @@ class _GroupPageState extends State<GroupPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/groups/user/${widget.userId}'),
+        Uri.parse('http://chasouluix.my.id:3000/api/groups/user/${widget.userId}'),
       );
 
       if (response.statusCode == 200) {
@@ -56,7 +56,7 @@ class _GroupPageState extends State<GroupPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.7:3000/api/groups'),
+        Uri.parse('http://chasouluix.my.id:3000/api/groups'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'id_users': widget.userId,

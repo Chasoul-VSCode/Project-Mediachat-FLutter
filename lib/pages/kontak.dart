@@ -51,7 +51,7 @@ class _KontakPageState extends State<KontakPage> {
   Future<void> _fetchUsers() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/users'),
+        Uri.parse('http://chasouluix.my.id:3000/api/users'),
         headers: {'Content-Type': 'application/json'},
       );
 
