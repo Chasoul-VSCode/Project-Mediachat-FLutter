@@ -263,7 +263,7 @@ class ChatMessage extends StatelessWidget {
             ),
           ),
           if (isMe) const SizedBox(width: 6),
-          if (isMe) CircleAvatar(radius: 12, child: Text('M')),
+          if (isMe) const CircleAvatar(radius: 12, child: Text('M')),
         ],
       ),
     );
