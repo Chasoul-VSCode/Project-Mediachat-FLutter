@@ -25,6 +25,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   bool _isSearchVisible = false;
   List<dynamic> _chats = [];
   late int _loggedInUserId;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -76,7 +77,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _fetchChats() async {
+    if (_isLoading) return;
+
     try {
+      setState(() {
+        _isLoading = true;
+      });
+
       final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -100,14 +107,58 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         if (mounted) { // Check if widget is still mounted before setState
           setState(() {
             _chats = uniqueChats.values.toList();
+            _isLoading = false;
           });
         }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         // Handle error
         print('Failed to load chats: ${response.statusCode}');
       }
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       print('Error fetching chats: $e');
+    }
+  }
+
+  Future<void> _deleteChat(int chatId) async {
+    if (_isLoading) return;
+
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final response = await http.delete(
+        Uri.parse('http://192.168.1.7:3000/api/chats/$chatId'),
+      );
+
+      if (response.statusCode == 200) {
+        // Remove the deleted chat from local state first
+        setState(() {
+          _chats.removeWhere((chat) => chat['id_chat'] == chatId);
+        });
+        // Then refresh the chat list
+        await _fetchChats();
+      } else {
+        print('Failed to delete chat: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error deleting chat: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -149,7 +200,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ),
           ),
           Expanded(
-            child: _buildChatTab(),
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : _buildChatTab(),
           ),
         ],
       ),
@@ -176,27 +229,75 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final chat = _chats[index];
         final DateTime chatDate = DateTime.parse(chat['date']);
         final String formattedTime = DateFormat('HH:mm').format(chatDate); // Format time as HH:mm
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${chat['username']}'),
-            radius: 20,
+        return Dismissible(
+          key: Key(chat['id_chat'].toString()),
+          background: Container(
+            color: Colors.red,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20.0),
+            child: const Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
           ),
-          title: Text(chat['username'], style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
-          subtitle: Text(chat['chat'], style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-          trailing: Text(formattedTime, style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => IsiChatPage(
-                  isDarkMode: widget.isDarkMode,
-                  userName: chat['username'], 
-                  userId: chat['id_users'], // Menggunakan id_users dari chat yang dipilih
-                ),
-              ),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (direction) async {
+            return await showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  backgroundColor: widget.isDarkMode ? Colors.grey[900] : Colors.white,
+                  title: Text(
+                    'Konfirmasi',
+                    style: TextStyle(
+                      color: widget.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  content: Text(
+                    'Apakah Anda yakin ingin menghapus chat ini?',
+                    style: TextStyle(
+                      color: widget.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Batal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text('Hapus'),
+                    ),
+                  ],
+                );
+              },
             );
           },
+          onDismissed: (direction) {
+            _deleteChat(chat['id_chat']);
+          },
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${chat['username']}'),
+              radius: 20,
+            ),
+            title: Text(chat['username'], style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
+            subtitle: Text(chat['chat'], style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
+            trailing: Text(formattedTime, style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => IsiChatPage(
+                    isDarkMode: widget.isDarkMode,
+                    userName: chat['username'], 
+                    userId: chat['id_users'],
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );

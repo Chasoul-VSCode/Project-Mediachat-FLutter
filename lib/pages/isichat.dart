@@ -70,6 +70,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   isMe: chatData['id_users'] == _userId,
                   isDarkMode: widget.isDarkMode,
                   userName: chatData['username'],
+                  chatId: chatData['id_chat'],
+                  onDelete: () => _deleteMessage(chatData['id_chat']),
                 ));
               }
             }
@@ -82,6 +84,23 @@ class _IsiChatPageState extends State<IsiChatPage> {
       }
     } catch (e) {
       print('Error fetching chat messages: $e');
+    }
+  }
+
+  Future<void> _deleteMessage(int chatId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('http://192.168.1.7:3000/api/chats/$chatId'),
+      );
+
+      if (response.statusCode == 200) {
+        // Message deleted successfully, refresh chat messages
+        _fetchChatMessages();
+      } else {
+        print('Failed to delete message: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error deleting message: $e');
     }
   }
 
@@ -217,6 +236,8 @@ class ChatMessage extends StatelessWidget {
   final bool isMe;
   final bool isDarkMode;
   final String userName;
+  final int chatId;
+  final VoidCallback onDelete;
 
   const ChatMessage({
     Key? key,
@@ -225,7 +246,45 @@ class ChatMessage extends StatelessWidget {
     required this.isMe,
     required this.isDarkMode,
     required this.userName,
+    required this.chatId,
+    required this.onDelete,
   }) : super(key: key);
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+          title: Text(
+            'Hapus Pesan',
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus pesan ini?',
+            style: TextStyle(
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onDelete();
+              },
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -253,18 +312,21 @@ class ChatMessage extends StatelessWidget {
                       ),
                     ),
                   ),
-                Container(
-                  padding: const EdgeInsets.all(8.0),
-                  constraints: const BoxConstraints(maxWidth: 200),
-                  decoration: BoxDecoration(
-                    color: isMe
-                        ? (isDarkMode ? Colors.blue[700] : Colors.blue[100])
-                        : (isDarkMode ? Colors.grey[800] : Colors.grey[300]),
-                    borderRadius: BorderRadius.circular(6.0),
-                  ),
-                  child: Text(
-                    text,
-                    style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 12),
+                GestureDetector(
+                  onLongPress: isMe ? () => _showDeleteDialog(context) : null,
+                  child: Container(
+                    padding: const EdgeInsets.all(8.0),
+                    constraints: const BoxConstraints(maxWidth: 200),
+                    decoration: BoxDecoration(
+                      color: isMe
+                          ? (isDarkMode ? Colors.blue[700] : Colors.blue[100])
+                          : (isDarkMode ? Colors.grey[800] : Colors.grey[300]),
+                      borderRadius: BorderRadius.circular(6.0),
+                    ),
+                    child: Text(
+                      text,
+                      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 12),
+                    ),
                   ),
                 ),
                 Padding(
