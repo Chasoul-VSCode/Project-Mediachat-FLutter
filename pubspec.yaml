@@ -23,3 +23,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Untuk mengizinkan akses internet, tambahkan permission di android/app/src/main/AndroidManifest.xml:
+  # <uses-permission android:name="android.permission.INTERNET"/>

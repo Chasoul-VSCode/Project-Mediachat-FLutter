@@ -26,6 +26,18 @@ class _IsiChatPageState extends State<IsiChatPage> {
     super.initState();
     _loadUserId();
     _fetchChatMessages();
+    // Start auto refresh when page initializes
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    // Refresh every 3 seconds
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return false; // Stop if widget is disposed
+      await _fetchChatMessages();
+      return true; // Continue the loop
+    });
   }
 
   Future<void> _loadUserId() async {
@@ -39,7 +51,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Future<void> _fetchChatMessages() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
+      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Chats fetched successfully') {
@@ -173,7 +185,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
     try {
       final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
       final response = await http.post(
-        Uri.parse('http://192.168.1.7:3000/api/chats'),
+        Uri.parse('http://chasouluix.my.id:3000/api/chats'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

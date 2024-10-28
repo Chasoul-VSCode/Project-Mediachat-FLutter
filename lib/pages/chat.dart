@@ -33,6 +33,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     _loadUserId();
+    
+    // Setup periodic timer to refresh chats every 3 seconds
+    Future.delayed(Duration.zero, () {
+      _startAutoRefresh();
+    });
+  }
+
+  void _startAutoRefresh() {
+    // Refresh every 3 seconds
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return false; // Stop if widget is disposed
+      await _fetchChats();
+      return true; // Continue the loop
+    });
   }
 
   Future<void> _loadUserId() async {
@@ -60,7 +75,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Future<void> _fetchChats() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
+      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final allChats = data['data'] as List;
@@ -80,9 +95,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           }
         }
 
-        setState(() {
-          _chats = uniqueChats.values.toList();
-        });
+        if (mounted) { // Check if widget is still mounted before setState
+          setState(() {
+            _chats = uniqueChats.values.toList();
+          });
+        }
       } else {
         // Handle error
         print('Failed to load chats: ${response.statusCode}');
