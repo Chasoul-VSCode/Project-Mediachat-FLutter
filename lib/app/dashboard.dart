@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_chatapp_flutter/pages/call.dart';
 import 'package:project_chatapp_flutter/pages/community.dart';
 import '../pages/chat.dart';
+import '../pages/group.dart';
 import '../pages/status.dart';
 import 'auth.dart';
 import 'package:http/http.dart' as http;
@@ -132,7 +133,7 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             ChatPage(isDarkMode: isDarkMode, userId: widget.userId),
             StatusPage(isDarkMode: isDarkMode),
-            CommunityPage(isDarkMode: isDarkMode),
+            GroupPage(isDarkMode: isDarkMode, userId: widget.userId),
             CallPage(isDarkMode: isDarkMode),
           ],
         ),
