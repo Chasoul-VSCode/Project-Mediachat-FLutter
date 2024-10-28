@@ -45,9 +45,11 @@ class _GroupPageState extends State<GroupPage> {
       // Handle error
       print('Error fetching groups: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {  // Check if widget is still mounted before calling setState
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

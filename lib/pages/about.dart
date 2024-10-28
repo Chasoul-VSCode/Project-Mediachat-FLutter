@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AboutPage extends StatefulWidget {
   final String username;
@@ -22,29 +23,43 @@ class _AboutPageState extends State<AboutPage> {
   Map<String, dynamic> _userData = {};
   bool _isLoading = true;
   String _error = '';
+  int _currentUserId = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _getCurrentUserId();
+  }
+
+  Future<void> _getCurrentUserId() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('userId');
+      if (userId != null) {
+        setState(() {
+          _currentUserId = int.parse(userId);
+        });
+      }
+      _fetchUserData();
+    } catch (e) {
+      print('Error getting current user ID: $e');
+    }
   }
 
   Future<void> _fetchUserData() async {
     try {
+      // If viewing own profile from sidebar, use current user ID
+      final targetUserId = widget.userId == _currentUserId ? _currentUserId : widget.userId;
+      
       final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/users'),
+        Uri.parse('http://192.168.1.7:3000/api/users/$targetUserId'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        // Find user with matching id_users
-        final userData = data.firstWhere(
-          (user) => user['id_users'] == widget.userId,
-          orElse: () => {},
-        );
+        final userData = json.decode(response.body);
         
-        if (userData.isNotEmpty) {
+        if (userData != null) {
           setState(() {
             _userData = userData;
             _isLoading = false;

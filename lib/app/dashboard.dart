@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_chatapp_flutter/pages/call.dart';
 import 'package:project_chatapp_flutter/pages/community.dart';
+import '../pages/about.dart';
 import '../pages/chat.dart';
 import '../pages/group.dart';
 import '../pages/status.dart';
@@ -104,26 +105,108 @@ class _DashboardPageState extends State<DashboardPage> {
               UserAccountsDrawerHeader(
                 accountName: Text(username, style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 accountEmail: Text(phoneNumber, style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.black54)),
-                currentAccountPicture: const CircleAvatar(
-                  backgroundImage: AssetImage('assets/profile_picture.jpg'),
-                  radius: 30,
+                currentAccountPicture: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AboutPage(
+                          username: username,
+                          isDarkMode: isDarkMode,
+                          userId: widget.userId,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const CircleAvatar(
+                    backgroundImage: AssetImage('assets/profile_picture.jpg'),
+                    radius: 30,
+                  ),
                 ),
+                otherAccountsPictures: [
+                  IconButton(
+                    icon: const Icon(Icons.qr_code, color: Colors.white, size: 30),
+                    onPressed: () {
+                      // Add QR code functionality here
+                    },
+                  ),
+                ],
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.grey[800] : Colors.blue.shade400,
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.settings, size: 20, color: isDarkMode ? Colors.white : Colors.black),
-                title: Text('Settings', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                leading: Icon(Icons.person, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Profile', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
-                  // Implement settings functionality
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AboutPage(
+                        username: username,
+                        isDarkMode: isDarkMode,
+                        userId: widget.userId,
+                      ),
+                    ),
+                  );
                 },
               ),
               ListTile(
-                leading: Icon(Icons.info, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                leading: Icon(Icons.group_add, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('New Group', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => GroupPage(
+                        isDarkMode: isDarkMode,
+                        userId: widget.userId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.notifications, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Notifications', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  // Implement notifications settings
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.security, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Privacy', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  // Implement privacy settings
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.storage, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Storage and Data', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  // Implement storage settings
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.help_outline, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Help', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  // Implement help functionality
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.info_outline, size: 20, color: isDarkMode ? Colors.white : Colors.black),
                 title: Text('About', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
                   // Implement about functionality
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: Icon(Icons.share, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Invite Friends', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  // Implement invite functionality
                 },
               ),
             ],
