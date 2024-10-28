@@ -84,7 +84,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _isLoading = true;
       });
 
-      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/chats'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final allChats = data['data'] as List;
@@ -138,7 +138,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       });
 
       final response = await http.delete(
-        Uri.parse('http://chasouluix.my.id:3000/api/chats/$chatId'),
+        Uri.parse('http://192.168.1.7:3000/api/chats/$chatId'),
       );
 
       if (response.statusCode == 200) {

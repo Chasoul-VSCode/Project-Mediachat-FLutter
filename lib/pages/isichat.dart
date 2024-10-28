@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'about.dart';
+
 class IsiChatPage extends StatefulWidget {
   final String userName;
   final bool isDarkMode;
@@ -51,7 +53,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Future<void> _fetchChatMessages() async {
     try {
-      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/chats'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Chats fetched successfully') {
@@ -90,7 +92,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
   Future<void> _deleteMessage(int chatId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://chasouluix.my.id:3000/api/chats/$chatId'),
+        Uri.parse('http://192.168.1.7:3000/api/chats/$chatId'),
       );
 
       if (response.statusCode == 200) {
@@ -144,7 +146,19 @@ class _IsiChatPageState extends State<IsiChatPage> {
           ),
           IconButton(
             icon: Icon(Icons.more_vert, color: widget.isDarkMode ? Colors.white : Colors.black, size: 18),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AboutPage(
+                    key: null,
+                    username: widget.userName,
+                    isDarkMode: widget.isDarkMode,
+                    userId: _userId,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -206,7 +220,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
     try {
       final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
       final response = await http.post(
-        Uri.parse('http://chasouluix.my.id:3000/api/chats'),
+        Uri.parse('http://192.168.1.7:3000/api/chats'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -332,7 +346,7 @@ class ChatMessage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
                   child: Text(
-                    DateFormat('dd MMM yyyy, HH:mm').format(date),
+                    DateFormat('HH:mm').format(date),
                     style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54, fontSize: 10),
                   ),
                 ),
