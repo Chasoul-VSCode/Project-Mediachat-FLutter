@@ -47,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _fetchUserData() async {
-    final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/users/$_userId'));
+    final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/$_userId'));
     if (response.statusCode == 200) {
       final userData = json.decode(response.body);
       setState(() {
@@ -182,7 +182,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () async {
                 if (newName.isNotEmpty) {
                   final response = await http.put(
-                    Uri.parse('http://chasouluix.my.id:3000/api/users/$_userId'),
+                    Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
                     headers: <String, String>{
                       'Content-Type': 'application/json; charset=UTF-8',
                     },

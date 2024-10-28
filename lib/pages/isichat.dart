@@ -51,7 +51,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Future<void> _fetchChatMessages() async {
     try {
-      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/chats'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Chats fetched successfully') {
@@ -59,9 +59,11 @@ class _IsiChatPageState extends State<IsiChatPage> {
           setState(() {
             _messages.clear(); // Clear existing messages
             for (var chatData in chatsData) {
-              if (chatData['id_users'] == _userId || chatData['username'] == widget.userName) {
-                if (chatData['id_users'] != _userId) {
-                }
+              // Show messages where either:
+              // 1. Current user is sender (id_users == _userId) and recipient is widget.userId (for_users == widget.userId)
+              // 2. Current user is recipient (for_users == _userId) and sender is widget.userId (id_users == widget.userId)
+              if ((chatData['id_users'] == _userId && chatData['for_users'] == widget.userId) ||
+                  (chatData['for_users'] == _userId && chatData['id_users'] == widget.userId)) {
                 _messages.add(ChatMessage(
                   text: chatData['chat'],
                   date: DateTime.parse(chatData['date']).toLocal(),
@@ -185,7 +187,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
     try {
       final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
       final response = await http.post(
-        Uri.parse('http://chasouluix.my.id:3000/api/chats'),
+        Uri.parse('http://192.168.1.7:3000/api/chats'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -193,6 +195,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
           'id_users': _userId,
           'chat': message,
           'date': jakartaTime.toIso8601String(),
+          'for_users': widget.userId, // Set recipient to the user we're chatting with
         }),
       );
 

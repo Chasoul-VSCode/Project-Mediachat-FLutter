@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'isichat.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart'; // Add this import for date formatting
+import 'package:intl/intl.dart';
+
+import 'kontak.dart'; // Add this import for date formatting
 
 class ChatPage extends StatefulWidget {
   final bool isDarkMode;
@@ -75,7 +77,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Future<void> _fetchChats() async {
     try {
-      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/chats'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final allChats = data['data'] as List;
@@ -153,7 +155,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Add new chat functionality
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => KontakPage(isDarkMode: widget.isDarkMode),
+            ),
+          );
         },
         backgroundColor: iconColor,
         mini: true,
@@ -184,7 +191,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               MaterialPageRoute(
                 builder: (context) => IsiChatPage(
                   isDarkMode: widget.isDarkMode,
-                  userName: chat['username'], userId: widget.userId,
+                  userName: chat['username'], 
+                  userId: chat['id_users'], // Menggunakan id_users dari chat yang dipilih
                 ),
               ),
             );

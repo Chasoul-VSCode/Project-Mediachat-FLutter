@@ -25,7 +25,7 @@ class _AuthPageState extends State<AuthPage> {
     });
 
     final response = await http.post(
-      Uri.parse('http://chasouluix.my.id:3000/api/login'),
+      Uri.parse('http://192.168.1.7:3000/api/login'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },

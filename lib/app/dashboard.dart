@@ -38,7 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
 
-      final response = await http.get(Uri.parse('http://chasouluix.my.id:3000/api/users/$userId'));
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/$userId'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
