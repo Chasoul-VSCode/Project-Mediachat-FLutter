@@ -22,7 +22,7 @@ class _AboutPageState extends State<AboutPage> {
   Map<String, dynamic> _userData = {};
   bool _isLoading = true;
   String _error = '';
-  int _currentUserId = 0;
+  final int _currentUserId = 0;
 
   @override
   void initState() {

@@ -29,8 +29,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   List<dynamic> _chats = [];
   late int _loggedInUserId;
   bool _isLoading = false;
-  Map<int, int> _unreadMessages = {};
-  Map<int, bool> _messageReadStatus = {};
+  final Map<int, int> _unreadMessages = {};
+  final Map<int, bool> _messageReadStatus = {};
 
   @override
   void initState() {
@@ -97,8 +97,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final data = json.decode(response.body);
         final allChats = data['data'] as List;
         
+        // Filter chats where for_users matches logged in user ID
         final filteredChats = allChats.where((chat) => 
-          chat['id_users'] != _loggedInUserId
+          chat['for_users'] == _loggedInUserId
         ).toList();
 
         filteredChats.sort((a, b) => 
@@ -251,7 +252,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       itemCount: _chats.length,
       itemBuilder: (context, index) {
         final chat = _chats[index];
-        final chatDate = DateTime.parse(chat['date']);
+        final chatDate = DateTime.parse(chat['date']).toLocal().add(const Duration(hours: 24)); // Konversi ke waktu Jakarta (UTC+7)
         final formattedTime = DateFormat('HH:mm').format(chatDate);
         final unreadCount = _unreadMessages[chat['id_users']] ?? 0;
         final isRead = _messageReadStatus[chat['id_chat']] ?? false;
