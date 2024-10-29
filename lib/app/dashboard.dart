@@ -136,20 +136,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.person, size: 20, color: isDarkMode ? Colors.white : Colors.black),
-                title: Text('Profile', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AboutPage(
-                        username: username,
-                        isDarkMode: isDarkMode,
-                        userId: widget.userId,
-                      ),
-                    ),
-                  );
-                },
+                leading: const Icon(Icons.person, size: 20),
+                title: const Text('Profile', style: TextStyle(fontSize: 14)),
+                onTap: () {},
               ),
               ListTile(
                 leading: Icon(Icons.group_add, size: 20, color: isDarkMode ? Colors.white : Colors.black),

@@ -3,17 +3,20 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'isichat.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-
-import 'kontak.dart'; // Add this import for date formatting
+import 'package:shared_preferences/shared_preferences.dart';
+import 'isichat.dart';
+import 'kontak.dart';
 
 class ChatPage extends StatefulWidget {
   final bool isDarkMode;
   final int userId;
 
-  const ChatPage({Key? key, required this.isDarkMode, required this.userId}) : super(key: key);
+  const ChatPage({
+    Key? key, 
+    required this.isDarkMode, 
+    required this.userId
+  }) : super(key: key);
 
   @override
   _ChatPageState createState() => _ChatPageState();
@@ -26,6 +29,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   List<dynamic> _chats = [];
   late int _loggedInUserId;
   bool _isLoading = false;
+  Map<int, int> _unreadMessages = {};
+  Map<int, bool> _messageReadStatus = {};
 
   @override
   void initState() {
@@ -37,26 +42,26 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
     _loadUserId();
     
-    // Setup periodic timer to refresh chats every 3 seconds
     Future.delayed(Duration.zero, () {
       _startAutoRefresh();
     });
   }
 
   void _startAutoRefresh() {
-    // Refresh every 3 seconds
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return false; // Stop if widget is disposed
+      if (!mounted) return false;
       await _fetchChats();
-      return true; // Continue the loop
+      return true;
     });
   }
 
   Future<void> _loadUserId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    _loggedInUserId = int.parse(prefs.getString('userId') ?? '0');
-    _fetchChats();
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _loggedInUserId = int.parse(prefs.getString('userId') ?? '0');
+    });
+    await _fetchChats();
   }
 
   @override
@@ -84,29 +89,49 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _isLoading = true;
       });
 
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
+      final response = await http.get(
+        Uri.parse('http://192.168.1.7:3000/api/chats')
+      );
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final allChats = data['data'] as List;
         
-        // Filter out chats from the logged-in user
         final filteredChats = allChats.where((chat) => 
           chat['id_users'] != _loggedInUserId
         ).toList();
 
-        // Remove duplicates based on id_users, keeping only the most recent chat
+        filteredChats.sort((a, b) => 
+          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date']))
+        );
+
+        _unreadMessages.clear();
+        _messageReadStatus.clear();
+        
+        for (var chat in filteredChats) {
+          final userId = chat['id_users'];
+          if (chat['read'] == false) {
+            _unreadMessages[userId] = (_unreadMessages[userId] ?? 0) + 1;
+            _messageReadStatus[chat['id_chat']] = false;
+          } else {
+            _messageReadStatus[chat['id_chat']] = true;
+          }
+        }
+
         final Map<int, dynamic> uniqueChats = {};
         for (var chat in filteredChats) {
           final userId = chat['id_users'];
-          if (!uniqueChats.containsKey(userId) || 
-              DateTime.parse(chat['date']).isAfter(DateTime.parse(uniqueChats[userId]['date']))) {
+          if (!uniqueChats.containsKey(userId)) {
             uniqueChats[userId] = chat;
           }
         }
 
-        if (mounted) { // Check if widget is still mounted before setState
+        if (mounted) {
           setState(() {
-            _chats = uniqueChats.values.toList();
+            _chats = uniqueChats.values.toList()
+              ..sort((a, b) => 
+                DateTime.parse(b['date']).compareTo(DateTime.parse(a['date']))
+              );
             _isLoading = false;
           });
         }
@@ -116,8 +141,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             _isLoading = false;
           });
         }
-        // Handle error
-        print('Failed to load chats: ${response.statusCode}');
+        debugPrint('Failed to load chats: ${response.statusCode}');
       }
     } catch (e) {
       if (mounted) {
@@ -125,7 +149,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _isLoading = false;
         });
       }
-      print('Error fetching chats: $e');
+      debugPrint('Error fetching chats: $e');
     }
   }
 
@@ -142,17 +166,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       );
 
       if (response.statusCode == 200) {
-        // Remove the deleted chat from local state first
         setState(() {
           _chats.removeWhere((chat) => chat['id_chat'] == chatId);
         });
-        // Then refresh the chat list
         await _fetchChats();
       } else {
-        print('Failed to delete chat: ${response.statusCode}');
+        debugPrint('Failed to delete chat: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error deleting chat: $e');
+      debugPrint('Error deleting chat: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -164,9 +186,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor = widget.isDarkMode ? Colors.white70 : Colors.blue.shade400;
-    final Color textColor = widget.isDarkMode ? Colors.white : Colors.black;
-    final Color backgroundColor = widget.isDarkMode ? Colors.black : Colors.white;
+    final iconColor = widget.isDarkMode ? Colors.white70 : Colors.blue.shade400;
+    final textColor = widget.isDarkMode ? Colors.white : Colors.black;
+    final backgroundColor = widget.isDarkMode ? Colors.black : Colors.white;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -184,12 +206,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 Expanded(
                   child: SizeTransition(
                     sizeFactor: _animation,
-                    axis: Axis.horizontal,
                     child: TextField(
                       decoration: InputDecoration(
                         hintText: 'Search...',
                         border: InputBorder.none,
-                        hintStyle: TextStyle(fontSize: 14, color: textColor.withOpacity(0.6)),
+                        hintStyle: TextStyle(
+                          fontSize: 14, 
+                          color: textColor.withOpacity(0.6)
+                        ),
                       ),
                       style: TextStyle(fontSize: 14, color: textColor),
                     ),
@@ -227,8 +251,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       itemCount: _chats.length,
       itemBuilder: (context, index) {
         final chat = _chats[index];
-        final DateTime chatDate = DateTime.parse(chat['date']);
-        final String formattedTime = DateFormat('HH:mm').format(chatDate); // Format time as HH:mm
+        final chatDate = DateTime.parse(chat['date']);
+        final formattedTime = DateFormat('HH:mm').format(chatDate);
+        final unreadCount = _unreadMessages[chat['id_users']] ?? 0;
+        final isRead = _messageReadStatus[chat['id_chat']] ?? false;
+        
         return Dismissible(
           key: Key(chat['id_chat'].toString()),
           background: Container(
@@ -242,7 +269,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ),
           direction: DismissDirection.endToStart,
           confirmDismiss: (direction) async {
-            return await showDialog(
+            return await showDialog<bool>(
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
@@ -278,20 +305,79 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           },
           child: ListTile(
             leading: CircleAvatar(
-              backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${chat['username']}'),
+              backgroundImage: NetworkImage(
+                'https://via.placeholder.com/150?text=${chat['username']}'
+              ),
               radius: 20,
             ),
-            title: Text(chat['username'], style: TextStyle(fontSize: 14, color: widget.isDarkMode ? Colors.white : Colors.black)),
-            subtitle: Text(chat['chat'], style: TextStyle(fontSize: 12, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-            trailing: Text(formattedTime, style: TextStyle(fontSize: 10, color: widget.isDarkMode ? Colors.white70 : Colors.black54)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    chat['username'], 
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: widget.isDarkMode ? Colors.white : Colors.black
+                    )
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Row(
+              children: [
+                Icon(
+                  isRead ? Icons.done_all : Icons.done,
+                  size: 16,
+                  color: isRead ? Colors.blue : Colors.grey,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    chat['chat'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: widget.isDarkMode ? Colors.white70 : Colors.black54
+                    )
+                  ),
+                ),
+              ],
+            ),
+            trailing: Text(
+              formattedTime,
+              style: TextStyle(
+                fontSize: 10,
+                color: widget.isDarkMode ? Colors.white70 : Colors.black54
+              )
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 4
+            ),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => IsiChatPage(
                     isDarkMode: widget.isDarkMode,
-                    userName: chat['username'], 
+                    userName: chat['username'],
                     userId: chat['id_users'],
                   ),
                 ),

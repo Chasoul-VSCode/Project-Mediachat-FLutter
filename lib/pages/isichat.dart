@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 
 import 'about.dart';
 
@@ -22,6 +25,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
   late int _userId;
+  final ImagePicker _picker = ImagePicker();
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -51,6 +56,193 @@ class _IsiChatPageState extends State<IsiChatPage> {
     });
   }
 
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+      _showImagePreview();
+    }
+  }
+
+  void _showImagePreview() {
+    // Pastikan menggunakan widget.userId yang merupakan ID user yang login
+    final loggedInUserId = widget.userId;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: widget.isDarkMode ? Colors.grey[900] : Colors.white,
+          title: Text(
+            'Preview Image',
+            style: TextStyle(
+              color: widget.isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _selectedImage != null
+                  ? Image.file(_selectedImage!)
+                  : const Text('No image selected.'),
+              TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: 'Type a message',
+                  hintStyle: TextStyle(color: widget.isDarkMode ? Colors.white70 : Colors.black54, fontSize: 12),
+                ),
+                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black, fontSize: 12),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                _messageController.clear();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final message = _messageController.text;
+                _messageController.clear();
+                Navigator.of(context).pop();
+
+                try {
+                  var request = http.MultipartRequest(
+                    'POST',
+                    Uri.parse('http://192.168.1.7:3000/api/chats'),
+                  );
+
+                  // Menggunakan loggedInUserId yang pasti ada karena dari user yang login
+                  request.fields['id_users'] = loggedInUserId.toString();
+                  request.fields['chat'] = message;
+                  request.fields['for_users'] = widget.userId.toString();
+
+                  if (_selectedImage == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No image selected')),
+                    );
+                    return;
+                  }
+
+                  var multipartFile = await http.MultipartFile.fromPath(
+                    'images',
+                    _selectedImage!.path,
+                    filename: path.basename(_selectedImage!.path),
+                  );
+                  request.files.add(multipartFile);
+
+                  var streamedResponse = await request.send();
+                  var response = await http.Response.fromStream(streamedResponse);
+
+                  if (response.statusCode == 201) {
+                    // Add message only after successful upload
+                    final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+                    final responseData = json.decode(response.body);
+                    
+                    setState(() {
+                      _messages.insert(
+                        0,
+                        ChatMessage(
+                          text: message.isNotEmpty ? message : 'Sent an image',
+                          date: jakartaTime,
+                          isMe: true,
+                          isDarkMode: widget.isDarkMode,
+                          userName: 'Me', 
+                          chatId: responseData['id_chat'],
+                          onDelete: () {},
+                          imageUrl: _selectedImage!.path,
+                        ),
+                      );
+                    });
+                    
+                    // Refresh messages to show new image with server data
+                    _fetchChatMessages();
+                  } else {
+                    print('Failed to upload image: ${response.statusCode}');
+                    print('Response body: ${response.body}');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to send image: ${response.body}')),
+                    );
+                  }
+                } catch (e) {
+                  print('Error uploading image: $e');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error sending image: $e')),
+                  );
+                }
+
+                // Clear selected image
+                setState(() {
+                  _selectedImage = null;
+                });
+              },
+              child: const Text('Send'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _uploadAndSaveImage(File imageFile, String message) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://192.168.1.7:3000/api/chats'),
+      );
+
+      // Add text fields
+      request.fields['id_users'] = _userId.toString();
+      request.fields['chat'] = message;
+      request.fields['for_users'] = widget.userId.toString();
+
+      // Add the image file
+      var multipartFile = await http.MultipartFile.fromPath(
+        'images',
+        imageFile.path,
+        filename: path.basename(imageFile.path),
+      );
+      request.files.add(multipartFile);
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        _fetchChatMessages(); // Refresh messages to show new image
+      } else {
+        print('Failed to upload image: ${response.statusCode}');
+        print('Response body: ${response.body}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
+  }
+
+  void _addImageMessage(String imageUrl, String message) {
+    final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+    setState(() {
+      _messages.insert(
+        0,
+        ChatMessage(
+          text: message.isNotEmpty ? message : 'Sent an image',
+          date: jakartaTime,
+          isMe: true,
+          isDarkMode: widget.isDarkMode,
+          userName: 'Me',
+          chatId: 0,
+          onDelete: () {},
+          imageUrl: imageUrl,
+        ),
+      );
+    });
+  }
+
   Future<void> _fetchChatMessages() async {
     try {
       final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
@@ -61,11 +253,12 @@ class _IsiChatPageState extends State<IsiChatPage> {
           setState(() {
             _messages.clear(); // Clear existing messages
             for (var chatData in chatsData) {
-              // Show messages where either:
-              // 1. Current user is sender (id_users == _userId) and recipient is widget.userId (for_users == widget.userId)
-              // 2. Current user is recipient (for_users == _userId) and sender is widget.userId (id_users == widget.userId)
               if ((chatData['id_users'] == _userId && chatData['for_users'] == widget.userId) ||
                   (chatData['for_users'] == _userId && chatData['id_users'] == widget.userId)) {
+                String? imageUrl;
+                if (chatData['images'] != 'NoImages') {
+                  imageUrl = 'http://192.168.1.7:3000/images/${chatData['images']}';
+                }
                 _messages.add(ChatMessage(
                   text: chatData['chat'],
                   date: DateTime.parse(chatData['date']).toLocal(),
@@ -74,15 +267,13 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   userName: chatData['username'],
                   chatId: chatData['id_chat'],
                   onDelete: () => _deleteMessage(chatData['id_chat']),
+                  imageUrl: imageUrl,
                 ));
               }
             }
-            _messages.sort((a, b) => b.date.compareTo(a.date)); // Sort messages by date
+            _messages.sort((a, b) => b.date.compareTo(a.date));
           });
         }
-      } else {
-        // Handle error
-        print('Failed to fetch chat messages: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching chat messages: $e');
@@ -96,7 +287,6 @@ class _IsiChatPageState extends State<IsiChatPage> {
       );
 
       if (response.statusCode == 200) {
-        // Message deleted successfully, refresh chat messages
         _fetchChatMessages();
       } else {
         print('Failed to delete message: ${response.statusCode}');
@@ -154,7 +344,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     key: null,
                     username: widget.userName,
                     isDarkMode: widget.isDarkMode,
-                    userId: _userId,
+                    userId: widget.userId, // Changed from _userId to widget.userId to get for_users info
                   ),
                 ),
               );
@@ -187,7 +377,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
         children: [
           IconButton(
             icon: Icon(Icons.attach_file, color: widget.isDarkMode ? Colors.white70 : Colors.blue.shade400, size: 18),
-            onPressed: () {},
+            onPressed: _pickImage,
           ),
           Expanded(
             child: TextField(
@@ -228,12 +418,11 @@ class _IsiChatPageState extends State<IsiChatPage> {
           'id_users': _userId,
           'chat': message,
           'date': jakartaTime.toIso8601String(),
-          'for_users': widget.userId, // Set recipient to the user we're chatting with
+          'for_users': widget.userId,
         }),
       );
 
       if (response.statusCode == 201) {
-        // Message sent successfully, refresh chat messages
         _fetchChatMessages();
       } else {
         print('Failed to send message: ${response.statusCode}');
@@ -252,6 +441,7 @@ class ChatMessage extends StatelessWidget {
   final String userName;
   final int chatId;
   final VoidCallback onDelete;
+  final String? imageUrl;
 
   const ChatMessage({
     Key? key,
@@ -262,6 +452,7 @@ class ChatMessage extends StatelessWidget {
     required this.userName,
     required this.chatId,
     required this.onDelete,
+    this.imageUrl,
   }) : super(key: key);
 
   void _showDeleteDialog(BuildContext context) {
@@ -337,9 +528,28 @@ class ChatMessage extends StatelessWidget {
                           : (isDarkMode ? Colors.grey[800] : Colors.grey[300]),
                       borderRadius: BorderRadius.circular(6.0),
                     ),
-                    child: Text(
-                      text,
-                      style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (imageUrl != null)
+                          Image.network(
+                            imageUrl!,
+                            width: 180,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(child: CircularProgressIndicator());
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.error);
+                            },
+                          ),
+                        if (text != 'Sent an image')
+                          Text(
+                            text,
+                            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 12),
+                          ),
+                      ],
                     ),
                   ),
                 ),

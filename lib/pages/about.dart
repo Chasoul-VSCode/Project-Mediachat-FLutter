@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AboutPage extends StatefulWidget {
   final String username;
@@ -9,8 +8,8 @@ class AboutPage extends StatefulWidget {
   final int userId;
 
   const AboutPage({
-    Key? key, 
-    required this.username, 
+    Key? key,
+    required this.username,
     required this.isDarkMode,
     required this.userId,
   }) : super(key: key);
@@ -28,29 +27,15 @@ class _AboutPageState extends State<AboutPage> {
   @override
   void initState() {
     super.initState();
-    _getCurrentUserId();
-  }
-
-  Future<void> _getCurrentUserId() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? userId = prefs.getString('userId');
-      if (userId != null) {
-        setState(() {
-          _currentUserId = int.parse(userId);
-        });
-      }
-      _fetchUserData();
-    } catch (e) {
-      print('Error getting current user ID: $e');
-    }
+    _fetchUserData();
   }
 
   Future<void> _fetchUserData() async {
     try {
       // If viewing own profile from sidebar, use current user ID
-      final targetUserId = widget.userId == _currentUserId ? _currentUserId : widget.userId;
-      
+      final targetUserId =
+          widget.userId == _currentUserId ? _currentUserId : widget.userId;
+
       final response = await http.get(
         Uri.parse('http://192.168.1.7:3000/api/users/$targetUserId'),
         headers: {'Content-Type': 'application/json'},
@@ -58,7 +43,7 @@ class _AboutPageState extends State<AboutPage> {
 
       if (response.statusCode == 200) {
         final userData = json.decode(response.body);
-        
+
         if (userData != null) {
           setState(() {
             _userData = userData;
@@ -89,9 +74,11 @@ class _AboutPageState extends State<AboutPage> {
     return Scaffold(
       backgroundColor: widget.isDarkMode ? Colors.black : Colors.white,
       appBar: AppBar(
-        backgroundColor: widget.isDarkMode ? Colors.grey[900] : Colors.blue.shade400,
+        backgroundColor:
+            widget.isDarkMode ? Colors.grey[900] : Colors.blue.shade400,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: widget.isDarkMode ? Colors.white : Colors.black),
+          icon: Icon(Icons.arrow_back,
+              color: widget.isDarkMode ? Colors.white : Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -118,54 +105,67 @@ class _AboutPageState extends State<AboutPage> {
                       const SizedBox(height: 20),
                       ListTile(
                         leading: Icon(Icons.person,
-                            color: widget.isDarkMode ? Colors.white : Colors.blue),
+                            color:
+                                widget.isDarkMode ? Colors.white : Colors.blue),
                         title: Text(
                           'Username',
                           style: TextStyle(
-                            color: widget.isDarkMode ? Colors.grey : Colors.grey[600],
+                            color: widget.isDarkMode
+                                ? Colors.grey
+                                : Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
                           _userData['username'] ?? '',
                           style: TextStyle(
-                            color: widget.isDarkMode ? Colors.white : Colors.black,
+                            color:
+                                widget.isDarkMode ? Colors.white : Colors.black,
                             fontSize: 16,
                           ),
                         ),
                       ),
                       ListTile(
                         leading: Icon(Icons.phone,
-                            color: widget.isDarkMode ? Colors.white : Colors.blue),
+                            color:
+                                widget.isDarkMode ? Colors.white : Colors.blue),
                         title: Text(
                           'Phone',
                           style: TextStyle(
-                            color: widget.isDarkMode ? Colors.grey : Colors.grey[600],
+                            color: widget.isDarkMode
+                                ? Colors.grey
+                                : Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
                           _userData['nomor_hp'] ?? '',
                           style: TextStyle(
-                            color: widget.isDarkMode ? Colors.white : Colors.black,
+                            color:
+                                widget.isDarkMode ? Colors.white : Colors.black,
                             fontSize: 16,
                           ),
                         ),
                       ),
                       ListTile(
                         leading: Icon(Icons.info_outline,
-                            color: widget.isDarkMode ? Colors.white : Colors.blue),
+                            color:
+                                widget.isDarkMode ? Colors.white : Colors.blue),
                         title: Text(
                           'About',
                           style: TextStyle(
-                            color: widget.isDarkMode ? Colors.grey : Colors.grey[600],
+                            color: widget.isDarkMode
+                                ? Colors.grey
+                                : Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
                         subtitle: Text(
-                          _userData['about'] ?? 'Hey there! I am using this chat app.',
+                          _userData['about'] ??
+                              'Hey there! I am using this chat app.',
                           style: TextStyle(
-                            color: widget.isDarkMode ? Colors.white : Colors.black,
+                            color:
+                                widget.isDarkMode ? Colors.white : Colors.black,
                             fontSize: 16,
                           ),
                         ),
