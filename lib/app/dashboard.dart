@@ -87,11 +87,21 @@ class _DashboardPageState extends State<DashboardPage> {
               icon: const Icon(Icons.logout, size: 20),
               onPressed: () async {
                 SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.remove('userId');
-                // ignore: use_build_context_synchronously
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const AuthPage()),
-                );
+                String? userId = prefs.getString('userId');
+                if (userId != null) {
+                  final response = await http.post(
+                    Uri.parse('http://192.168.1.7:3000/api/logout/$userId')
+                  );
+                  if (response.statusCode == 200) {
+                    await prefs.remove('userId');
+                    // ignore: use_build_context_synchronously
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const AuthPage()),
+                    );
+                  } else {
+                    print('Failed to logout: ${response.statusCode}');
+                  }
+                }
               },
               color: isDarkMode ? Colors.white : Colors.black,
             ),
@@ -136,8 +146,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.person, size: 20),
-                title: const Text('Profile', style: TextStyle(fontSize: 14)),
+                leading: Icon(Icons.person, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Profile', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {},
               ),
               ListTile(

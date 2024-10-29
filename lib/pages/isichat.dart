@@ -314,13 +314,40 @@ class _IsiChatPageState extends State<IsiChatPage> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                widget.userName,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: widget.isDarkMode ? Colors.white : Colors.black,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.userName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: widget.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  FutureBuilder<http.Response>(
+                    future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${widget.userId}')),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.statusCode == 200) {
+                        final userData = json.decode(snapshot.data!.body);
+                        final bool isOnline = userData['status'] == 1;
+                        return Text(
+                          isOnline ? 'Online' : 'Offline',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isOnline 
+                              ? Colors.green 
+                              : widget.isDarkMode 
+                                ? Colors.white.withOpacity(0.7)
+                                : Colors.black.withOpacity(0.7),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
               ),
             ),
           ],

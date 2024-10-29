@@ -5,6 +5,8 @@ import 'dashboard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -12,7 +14,6 @@ class ProfilePage extends StatefulWidget {
   get userId => null;
 
   @override
-  // ignore: library_private_types_in_public_api
   _ProfilePageState createState() => _ProfilePageState();
 }
 
@@ -38,11 +39,9 @@ class _ProfilePageState extends State<ProfilePage> {
         await _fetchUserData();
       } else {
         print('User ID not found in SharedPreferences');
-        // Handle the case when userId is not available
       }
     } catch (e) {
       print('Error loading user ID: $e');
-      // Handle any errors that occur during the process
     }
   }
 
@@ -54,7 +53,6 @@ class _ProfilePageState extends State<ProfilePage> {
         _userName = userData['username'] ?? 'Username';
       });
     } else {
-      // Handle error
       print('Failed to load user data');
     }
   }
@@ -83,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     GestureDetector(
                       onTap: _changeProfilePicture,
                       child: CircleAvatar(
-                        radius: 50, // Reduced from 60
+                        radius: 50,
                         backgroundImage: _imageFile != null
                             ? FileImage(_imageFile!)
                             : const AssetImage('assets/default_profile.png') as ImageProvider,
@@ -94,34 +92,34 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           child: const Icon(
                             Icons.camera_alt,
-                            size: 25, // Reduced from 30
+                            size: 25,
                             color: Colors.white,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10), // Reduced from 15
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Flexible(
                           child: Text(
                             _userName,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Reduced from 20
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.edit, size: 18), // Reduced from 20
+                          icon: const Icon(Icons.edit, size: 18),
                           onPressed: _changeUserName,
                           color: Colors.blue.shade400,
                         ),
                       ],
                     ),
-                    const SizedBox(height: 15), // Reduced from 20
+                    const SizedBox(height: 15),
                     SizedBox(
-                      width: 130, // Reduced from 150
+                      width: 130,
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -131,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade400,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 10), // Reduced from 12
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                         child: const Text('Next'),
                       ),
@@ -146,16 +144,83 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _changeProfilePicture() async {
+Future<void> _changeProfilePicture() async {
+  try {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 70,
+    );
+
     if (image != null) {
-      setState(() {
-        _imageFile = File(image.path);
-      });
+      String imageName = '${DateTime.now().millisecondsSinceEpoch}-profile.jpg';
+
+      final response = await http.put(
+        Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'username': _userName,
+          'images_profile': imageName,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _imageFile = File(image.path);
+        });
+        _showDialog('Success', 'Profile picture updated successfully.');
+      } else {
+        _handleHttpError(response);
+      }
+    } else {
+      _showDialog('Error', 'No image selected.');
     }
+  } catch (e) {
+    print('Error saving profile picture: $e');
+    _showDialog('Error', 'Failed to save profile picture. Please try again.');
   }
+}
+
+void _handleHttpError(http.Response response) {
+  String message;
+  switch (response.statusCode) {
+    case 400:
+      message = 'Bad Request: ${response.body}';
+      break;
+    case 404:
+      message = 'User not found.';
+      break;
+    case 500:
+      message = 'Server error: ${response.body}';
+      break;
+    default:
+      message = 'Unexpected error: ${response.body}';
+  }
+  _showDialog('Error', message);
+}
+
+void _showDialog(String title, String message) {
+  if (mounted) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
   void _changeUserName() {
     showDialog(
@@ -197,7 +262,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     });
                     Navigator.of(context).pop();
                   } else {
-                    // Handle error
                     print('Failed to update username');
                   }
                 }

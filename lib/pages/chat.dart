@@ -305,11 +305,41 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             _deleteChat(chat['id_chat']);
           },
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundImage: NetworkImage(
-                'https://via.placeholder.com/150?text=${chat['username']}'
-              ),
-              radius: 20,
+            leading: Stack(
+              children: [
+                CircleAvatar(
+                  backgroundImage: NetworkImage(
+                    'https://via.placeholder.com/150?text=${chat['username']}'
+                  ),
+                  radius: 20,
+                ),
+                FutureBuilder<http.Response>(
+                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['for_users']}')),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data!.statusCode == 200) {
+                      final userData = json.decode(snapshot.data!.body);
+                      final bool isOnline = userData['status'] == 1;
+                      return Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: isOnline ? Colors.green : Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: widget.isDarkMode ? Colors.grey[900]! : Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
             title: Row(
               children: [
