@@ -97,9 +97,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final data = json.decode(response.body);
         final allChats = data['data'] as List;
         
-        // Filter chats where for_users matches logged in user ID
+        // Filter chats where either for_users or id_users matches logged in user ID
         final filteredChats = allChats.where((chat) => 
-          chat['for_users'] == _loggedInUserId
+          chat['for_users'] == _loggedInUserId || chat['id_users'] == _loggedInUserId
         ).toList();
 
         filteredChats.sort((a, b) => 
@@ -110,9 +110,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _messageReadStatus.clear();
         
         for (var chat in filteredChats) {
-          final userId = chat['id_users'];
-          if (chat['read'] == false) {
-            _unreadMessages[userId] = (_unreadMessages[userId] ?? 0) + 1;
+          final otherUserId = chat['id_users'] == _loggedInUserId ? chat['for_users'] : chat['id_users'];
+          if (chat['read'] == false && chat['for_users'] == _loggedInUserId) {
+            _unreadMessages[otherUserId] = (_unreadMessages[otherUserId] ?? 0) + 1;
             _messageReadStatus[chat['id_chat']] = false;
           } else {
             _messageReadStatus[chat['id_chat']] = true;
@@ -121,9 +121,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
         final Map<int, dynamic> uniqueChats = {};
         for (var chat in filteredChats) {
-          final userId = chat['id_users'];
-          if (!uniqueChats.containsKey(userId)) {
-            uniqueChats[userId] = chat;
+          final otherUserId = chat['id_users'] == _loggedInUserId ? chat['for_users'] : chat['id_users'];
+          if (!uniqueChats.containsKey(otherUserId)) {
+            uniqueChats[otherUserId] = {
+              ...chat,
+              'display_user_id': otherUserId // Store the ID of the other user for display
+            };
           }
         }
 
@@ -252,9 +255,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       itemCount: _chats.length,
       itemBuilder: (context, index) {
         final chat = _chats[index];
-        final chatDate = DateTime.parse(chat['date']).toLocal().add(const Duration(hours: 24)); // Konversi ke waktu Jakarta (UTC+7)
+        final chatDate = DateTime.parse(chat['date']).toLocal().add(const Duration(hours: 24));
         final formattedTime = DateFormat('HH:mm').format(chatDate);
-        final unreadCount = _unreadMessages[chat['id_users']] ?? 0;
+        final unreadCount = _unreadMessages[chat['display_user_id']] ?? 0;
         final isRead = _messageReadStatus[chat['id_chat']] ?? false;
         
         return Dismissible(
@@ -308,7 +311,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             leading: Stack(
               children: [
                 FutureBuilder<http.Response>(
-                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['for_users']}')),
+                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                       final userData = json.decode(snapshot.data!.body);
@@ -321,14 +324,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         radius: 20,
                       );
                     }
-                    return CircleAvatar(
-                      backgroundImage: const AssetImage('./images/default-profile.jpg'),
+                    return const CircleAvatar(
+                      backgroundImage: AssetImage('./images/default-profile.jpg'),
                       radius: 20,
                     );
                   },
                 ),
                 FutureBuilder<http.Response>(
-                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['for_users']}')),
+                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                       final userData = json.decode(snapshot.data!.body);
@@ -358,12 +361,27 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             title: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    chat['username'], 
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: widget.isDarkMode ? Colors.white : Colors.black
-                    )
+                  child: FutureBuilder<http.Response>(
+                    future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.statusCode == 200) {
+                        final userData = json.decode(snapshot.data!.body);
+                        return Text(
+                          userData['username'] ?? 'Unknown User',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: widget.isDarkMode ? Colors.white : Colors.black
+                          )
+                        );
+                      }
+                      return Text(
+                        'Loading...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: widget.isDarkMode ? Colors.white : Colors.black
+                        )
+                      );
+                    }
                   ),
                 ),
                 if (unreadCount > 0)
@@ -416,17 +434,24 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               horizontal: 8,
               vertical: 4
             ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => IsiChatPage(
-                    isDarkMode: widget.isDarkMode,
-                    userName: chat['username'],
-                    userId: chat['id_users'],
-                  ),
-                ),
+            onTap: () async {
+              final response = await http.get(
+                Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')
               );
+              
+              if (response.statusCode == 200) {
+                final userData = json.decode(response.body);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => IsiChatPage(
+                      isDarkMode: widget.isDarkMode,
+                      userName: userData['username'] ?? 'Unknown User',
+                      userId: chat['display_user_id'],
+                    ),
+                  ),
+                );
+              }
             },
           ),
         );

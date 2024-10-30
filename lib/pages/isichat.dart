@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 import 'about.dart';
 
@@ -24,7 +25,7 @@ class IsiChatPage extends StatefulWidget {
 class _IsiChatPageState extends State<IsiChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
-  late int _userId;
+  late int _userId; // Changed to late since we'll initialize in initState
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   String? _forUserProfileImage;
@@ -32,7 +33,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserId();
+    _userId = widget.userId; // Initialize _userId with widget.userId immediately
+    _loadUserId(); // Still call this to check for stored userId
     _fetchChatMessages();
     _fetchForUserProfile();
     // Start auto refresh when page initializes
@@ -64,13 +66,21 @@ class _IsiChatPageState extends State<IsiChatPage> {
   }
 
   Future<void> _loadUserId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userId = prefs.getString('userId') != null
-          ? int.parse(prefs.getString('userId')!)
-          : widget.userId;
-    });
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userIdStr = prefs.getString('userId');
+      if (userIdStr != null) {
+        setState(() {
+          _userId = int.parse(userIdStr);
+        });
+      }
+    } catch (e) {
+      print('Error loading userId: $e');
+      // Keep using widget.userId if there's an error
+    }
   }
+
+  
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -83,9 +93,6 @@ class _IsiChatPageState extends State<IsiChatPage> {
   }
 
   void _showImagePreview() {
-    // Pastikan menggunakan widget.userId yang merupakan ID user yang login
-    final loggedInUserId = widget.userId;
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -103,28 +110,17 @@ class _IsiChatPageState extends State<IsiChatPage> {
               _selectedImage != null
                   ? Image.file(_selectedImage!)
                   : const Text('No image selected.'),
-              TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: 'Type a message',
-                  hintStyle: TextStyle(color: widget.isDarkMode ? Colors.white70 : Colors.black54, fontSize: 12),
-                ),
-                style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black, fontSize: 12),
-              ),
             ],
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                _messageController.clear();
                 Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
-                final message = _messageController.text;
-                _messageController.clear();
                 Navigator.of(context).pop();
 
                 try {
@@ -133,9 +129,9 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     Uri.parse('http://192.168.1.7:3000/api/chats'),
                   );
 
-                  // Menggunakan loggedInUserId yang pasti ada karena dari user yang login
-                  request.fields['id_users'] = loggedInUserId.toString();
-                  request.fields['chat'] = message;
+                  // Ensure _userId is included and not null
+                  request.fields['id_users'] = _userId.toString();
+                  request.fields['chat'] = 'tidak ada';
                   request.fields['for_users'] = widget.userId.toString();
 
                   if (_selectedImage == null) {
@@ -145,10 +141,28 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     return;
                   }
 
+                  // Buat nama file unik dengan timestamp
+                  String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+                  String extension = path.extension(_selectedImage!.path);
+                  String filename = '$timestamp$extension';
+
+                  // Get application documents directory
+                  Directory appDocDir = await getApplicationDocumentsDirectory();
+                  String imagesPath = '${appDocDir.path}/images';
+                  Directory imagesDir = Directory(imagesPath);
+                  
+                  // Create images directory if it doesn't exist
+                  if (!await imagesDir.exists()) {
+                    await imagesDir.create(recursive: true);
+                  }
+
+                  // Copy file to app documents directory
+                  File newImage = await _selectedImage!.copy('$imagesPath/$filename');
+
                   var multipartFile = await http.MultipartFile.fromPath(
                     'images',
-                    _selectedImage!.path,
-                    filename: path.basename(_selectedImage!.path),
+                    newImage.path,
+                    filename: filename,
                   );
                   request.files.add(multipartFile);
 
@@ -156,22 +170,21 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   var response = await http.Response.fromStream(streamedResponse);
 
                   if (response.statusCode == 201) {
-                    // Add message only after successful upload
-                    final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
                     final responseData = json.decode(response.body);
+                    final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
                     
                     setState(() {
                       _messages.insert(
                         0,
                         ChatMessage(
-                          text: message.isNotEmpty ? message : 'Sent an image',
+                          text: 'Sent an image',
                           date: jakartaTime,
                           isMe: true,
                           isDarkMode: widget.isDarkMode,
                           userName: 'Me', 
                           chatId: responseData['id_chat'],
                           onDelete: () {},
-                          imageUrl: _selectedImage!.path,
+                          imageUrl: 'http://192.168.1.7:3000/images/$filename',
                         ),
                       );
                     });
@@ -212,16 +225,34 @@ class _IsiChatPageState extends State<IsiChatPage> {
         Uri.parse('http://192.168.1.7:3000/api/chats'),
       );
 
-      // Add text fields
+      // Add text fields using _userId
       request.fields['id_users'] = _userId.toString();
-      request.fields['chat'] = message;
+      request.fields['chat'] = 'tidak ada';
       request.fields['for_users'] = widget.userId.toString();
+
+      // Buat nama file unik dengan timestamp
+      String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      String extension = path.extension(imageFile.path);
+      String filename = '$timestamp$extension';
+
+      // Get application documents directory
+      Directory appDocDir = await getApplicationDocumentsDirectory();
+      String imagesPath = '${appDocDir.path}/images';
+      Directory imagesDir = Directory(imagesPath);
+      
+      // Create images directory if it doesn't exist
+      if (!await imagesDir.exists()) {
+        await imagesDir.create(recursive: true);
+      }
+
+      // Copy file to app documents directory
+      File newImage = await imageFile.copy('$imagesPath/$filename');
 
       // Add the image file
       var multipartFile = await http.MultipartFile.fromPath(
         'images',
-        imageFile.path,
-        filename: path.basename(imageFile.path),
+        newImage.path,
+        filename: filename,
       );
       request.files.add(multipartFile);
 
@@ -246,7 +277,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
       _messages.insert(
         0,
         ChatMessage(
-          text: message.isNotEmpty ? message : 'Sent an image',
+          text: 'Sent an image',
           date: jakartaTime,
           isMe: true,
           isDarkMode: widget.isDarkMode,
@@ -389,7 +420,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     key: null,
                     username: widget.userName,
                     isDarkMode: widget.isDarkMode,
-                    userId: widget.userId, // Changed from _userId to widget.userId to get for_users info
+                    userId: widget.userId,
                   ),
                 ),
               );
@@ -421,7 +452,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.attach_file, color: widget.isDarkMode ? Colors.white70 : Colors.blue.shade400, size: 18),
+            icon: Icon(Icons.camera_alt, color: widget.isDarkMode ? Colors.white70 : Colors.blue.shade400, size: 18),
             onPressed: _pickImage,
           ),
           Expanded(
@@ -434,6 +465,15 @@ class _IsiChatPageState extends State<IsiChatPage> {
               ),
               style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black, fontSize: 12),
             ),
+          ),
+          IconButton(
+            icon: Icon(Icons.mic, color: widget.isDarkMode ? Colors.white70 : Colors.blue.shade400, size: 18),
+            onPressed: () {
+              // TODO: Implement voice note recording functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Voice note feature coming soon!')),
+              );
+            },
           ),
           IconButton(
             icon: Icon(Icons.send, color: widget.isDarkMode ? Colors.white70 : Colors.blue.shade400, size: 18),
