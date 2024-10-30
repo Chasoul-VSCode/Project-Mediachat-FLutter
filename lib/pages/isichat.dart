@@ -9,6 +9,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import 'about.dart';
+import 'isicall.dart';
 
 class IsiChatPage extends StatefulWidget {
   final String userName;
@@ -408,7 +409,17 @@ class _IsiChatPageState extends State<IsiChatPage> {
           ),
           IconButton(
             icon: Icon(Icons.call, color: widget.isDarkMode ? Colors.white : Colors.black, size: 18),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => IsiCallPage(
+                    isDarkMode: widget.isDarkMode,
+                    userName: widget.userName, imageUrl: '',
+                  ),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: Icon(Icons.more_vert, color: widget.isDarkMode ? Colors.white : Colors.black, size: 18),
