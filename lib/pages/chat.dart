@@ -307,11 +307,25 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           child: ListTile(
             leading: Stack(
               children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    'https://via.placeholder.com/150?text=${chat['username']}'
-                  ),
-                  radius: 20,
+                FutureBuilder<http.Response>(
+                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['for_users']}')),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data!.statusCode == 200) {
+                      final userData = json.decode(snapshot.data!.body);
+                      final profileImage = userData['images_profile'];
+                      
+                      return CircleAvatar(
+                        backgroundImage: profileImage != null 
+                            ? MemoryImage(base64Decode(profileImage.split(',')[1]))
+                            : const AssetImage('./images/default-profile.jpg') as ImageProvider,
+                        radius: 20,
+                      );
+                    }
+                    return CircleAvatar(
+                      backgroundImage: const AssetImage('./images/default-profile.jpg'),
+                      radius: 20,
+                    );
+                  },
                 ),
                 FutureBuilder<http.Response>(
                   future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['for_users']}')),

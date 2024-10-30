@@ -21,6 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _userName = 'Username';
   File? _imageFile;
   String _userId = '';
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -51,6 +52,9 @@ class _ProfilePageState extends State<ProfilePage> {
       final userData = json.decode(response.body);
       setState(() {
         _userName = userData['username'] ?? 'Username';
+        if (userData['images_profile'] != null) {
+          _profileImageUrl = userData['images_profile'];
+        }
       });
     } else {
       print('Failed to load user data');
@@ -82,9 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       onTap: _changeProfilePicture,
                       child: CircleAvatar(
                         radius: 50,
-                        backgroundImage: _imageFile != null
-                            ? FileImage(_imageFile!)
-                            : const AssetImage('assets/default_profile.png') as ImageProvider,
+                        backgroundImage: _getProfileImage(),
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
@@ -144,83 +146,96 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-Future<void> _changeProfilePicture() async {
-  try {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      imageQuality: 70,
-    );
+  ImageProvider<Object> _getProfileImage() {
+    if (_imageFile != null) {
+      return FileImage(_imageFile!);
+    } else if (_profileImageUrl != null && _profileImageUrl!.startsWith('data:image')) {
+      return MemoryImage(base64Decode(_profileImageUrl!.split(',')[1]));
+    } else if (_userId.isNotEmpty) {
+      return NetworkImage('http://192.168.1.7:3000/api/users/$_userId/profile-image');
+    }
+    return const AssetImage('./images/default-profile.jpg');
+  }
 
-    if (image != null) {
-      String imageName = '${DateTime.now().millisecondsSinceEpoch}-profile.jpg';
-
-      final response = await http.put(
-        Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'username': _userName,
-          'images_profile': imageName,
-        }),
+  Future<void> _changeProfilePicture() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        imageQuality: 70,
       );
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _imageFile = File(image.path);
-        });
-        _showDialog('Success', 'Profile picture updated successfully.');
-      } else {
-        _handleHttpError(response);
-      }
-    } else {
-      _showDialog('Error', 'No image selected.');
-    }
-  } catch (e) {
-    print('Error saving profile picture: $e');
-    _showDialog('Error', 'Failed to save profile picture. Please try again.');
-  }
-}
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
-void _handleHttpError(http.Response response) {
-  String message;
-  switch (response.statusCode) {
-    case 400:
-      message = 'Bad Request: ${response.body}';
-      break;
-    case 404:
-      message = 'User not found.';
-      break;
-    case 500:
-      message = 'Server error: ${response.body}';
-      break;
-    default:
-      message = 'Unexpected error: ${response.body}';
-  }
-  _showDialog('Error', message);
-}
-
-void _showDialog(String title, String message) {
-  if (mounted) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
+        final response = await http.put(
+          Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, dynamic>{
+            'username': _userName,
+            'images_profile': base64Image,
+          }),
         );
-      },
-    );
+
+        if (response.statusCode == 200) {
+          setState(() {
+            _imageFile = File(image.path);
+            _profileImageUrl = base64Image;
+          });
+          _showDialog('Success', 'Profile picture updated successfully.');
+        } else {
+          _handleHttpError(response);
+        }
+      } else {
+        _showDialog('Error', 'No image selected.');
+      }
+    } catch (e) {
+      print('Error saving profile picture: $e');
+      _showDialog('Error', 'Failed to save profile picture. Please try again.');
+    }
   }
-}
+
+  void _handleHttpError(http.Response response) {
+    String message;
+    switch (response.statusCode) {
+      case 400:
+        message = 'Bad Request: ${response.body}';
+        break;
+      case 404:
+        message = 'User not found.';
+        break;
+      case 500:
+        message = 'Server error: ${response.body}';
+        break;
+      default:
+        message = 'Unexpected error: ${response.body}';
+    }
+    _showDialog('Error', message);
+  }
+
+  void _showDialog(String title, String message) {
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
 
   void _changeUserName() {
     showDialog(

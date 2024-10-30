@@ -23,6 +23,7 @@ class _DashboardPageState extends State<DashboardPage> {
   bool isDarkMode = false;
   String username = '';
   String phoneNumber = '';
+  String? profileImageUrl;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _DashboardPageState extends State<DashboardPage> {
         setState(() {
           username = data['username'] ?? '';
           phoneNumber = data['nomor_hp'] ?? '';
+          profileImageUrl = data['images_profile'];
         });
       } else {
         print('Failed to load user data: ${response.statusCode}');
@@ -53,6 +55,14 @@ class _DashboardPageState extends State<DashboardPage> {
     } catch (e) {
       print('Error fetching user data: $e');
     }
+  }
+
+  ImageProvider _getProfileImage() {
+    if (profileImageUrl != null && profileImageUrl!.startsWith('data:image')) {
+      String base64Image = profileImageUrl!.split(',')[1];
+      return MemoryImage(base64Decode(base64Image));
+    }
+    return const AssetImage('./images/default-profile.jpg');
   }
 
   void toggleTheme() {
@@ -128,8 +138,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     );
                   },
-                  child: const CircleAvatar(
-                    backgroundImage: AssetImage('assets/profile_picture.jpg'),
+                  child: CircleAvatar(
+                    backgroundImage: _getProfileImage(),
                     radius: 30,
                   ),
                 ),

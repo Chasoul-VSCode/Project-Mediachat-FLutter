@@ -159,15 +159,31 @@ class _KontakPageState extends State<KontakPage> {
                       elevation: 2,
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: widget.isDarkMode ? Colors.grey[800] : Colors.blue[100],
-                          child: Text(
-                            user['username'][0].toUpperCase(),
-                            style: TextStyle(
-                              color: widget.isDarkMode ? Colors.white : Colors.blue[900],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        leading: FutureBuilder<http.Response>(
+                          future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${user['id_users']}')),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data!.statusCode == 200) {
+                              final userData = json.decode(snapshot.data!.body);
+                              final profileImage = userData['images_profile'];
+                              
+                              return CircleAvatar(
+                                backgroundImage: profileImage != null 
+                                    ? MemoryImage(base64Decode(profileImage.replaceFirst('data:image/jpeg;base64,', '')))
+                                    : const AssetImage('./images/default-profile.jpg') as ImageProvider,
+                                radius: 20,
+                              );
+                            }
+                            return CircleAvatar(
+                              backgroundColor: widget.isDarkMode ? Colors.grey[800] : Colors.blue[100],
+                              child: Text(
+                                user['username'][0].toUpperCase(),
+                                style: TextStyle(
+                                  color: widget.isDarkMode ? Colors.white : Colors.blue[900],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                         title: Text(
                           user['username'],

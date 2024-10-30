@@ -27,14 +27,30 @@ class _IsiChatPageState extends State<IsiChatPage> {
   late int _userId;
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
+  String? _forUserProfileImage;
 
   @override
   void initState() {
     super.initState();
     _loadUserId();
     _fetchChatMessages();
+    _fetchForUserProfile();
     // Start auto refresh when page initializes
     _startAutoRefresh();
+  }
+
+  Future<void> _fetchForUserProfile() async {
+    try {
+      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/${widget.userId}'));
+      if (response.statusCode == 200) {
+        final userData = json.decode(response.body);
+        setState(() {
+          _forUserProfileImage = userData['images_profile'];
+        });
+      }
+    } catch (e) {
+      print('Error fetching for_user profile: $e');
+    }
   }
 
   void _startAutoRefresh() {
@@ -309,7 +325,9 @@ class _IsiChatPageState extends State<IsiChatPage> {
         title: Row(
           children: [
             CircleAvatar(
-              backgroundImage: NetworkImage('https://via.placeholder.com/150?text=${widget.userName}'),
+              backgroundImage: _forUserProfileImage != null && _forUserProfileImage!.contains(',')
+                  ? MemoryImage(base64Decode(_forUserProfileImage!.split(',')[1]))
+                  : const AssetImage('./images/default-profile.jpg') as ImageProvider,
               radius: 16,
             ),
             const SizedBox(width: 8),

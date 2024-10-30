@@ -99,8 +99,9 @@ class _AboutPageState extends State<AboutPage> {
                       const SizedBox(height: 20),
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: NetworkImage(
-                            'https://via.placeholder.com/150?text=${widget.username}'),
+                        backgroundImage: _userData['images_profile'] != null 
+                            ? MemoryImage(base64Decode(_userData['images_profile'].split(',')[1]))
+                            : const AssetImage('./images/default-profile.jpg') as ImageProvider,
                       ),
                       const SizedBox(height: 20),
                       ListTile(
