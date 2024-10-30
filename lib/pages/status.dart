@@ -213,7 +213,12 @@ class _StatusPageState extends State<StatusPage> {
   }
 
   ImageProvider _getProfileImage(String? imageUrl) {
-    if (imageUrl != null && imageUrl != 'NoImages') {
+    if (imageUrl != null && imageUrl.startsWith('data:image')) {
+      // Handle base64 image data
+      String base64Image = imageUrl.split(',')[1];
+      return MemoryImage(base64Decode(base64Image));
+    } else if (imageUrl != null && imageUrl != 'NoImages') {
+      // Handle image URL
       return NetworkImage('http://192.168.1.7:3000/images/$imageUrl');
     }
     return const AssetImage('./images/default-profile.jpg');

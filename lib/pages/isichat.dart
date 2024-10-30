@@ -584,23 +584,13 @@ class ChatMessage extends StatelessWidget {
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMe) CircleAvatar(radius: 12, child: Text(userName[0])),
-          if (!isMe) const SizedBox(width: 6),
           Flexible(
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
-                if (!isMe)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0),
-                    child: Text(
-                      userName,
-                      style: TextStyle(
-                        color: isDarkMode ? Colors.white70 : Colors.black54,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                if (!isMe) 
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 4.0),
                   ),
                 GestureDetector(
                   onLongPress: isMe ? () => _showDeleteDialog(context) : null,
@@ -648,8 +638,7 @@ class ChatMessage extends StatelessWidget {
               ],
             ),
           ),
-          if (isMe) const SizedBox(width: 6),
-          if (isMe) const CircleAvatar(radius: 12, child: Text('M')),
+          if (isMe) const SizedBox(width: 6)
         ],
       ),
     );
