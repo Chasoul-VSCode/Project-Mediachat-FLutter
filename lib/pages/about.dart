@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config.dart';
 
 class AboutPage extends StatefulWidget {
   final String username;
@@ -32,38 +33,55 @@ class _AboutPageState extends State<AboutPage> {
 
   Future<void> _fetchUserData() async {
     try {
-      // If viewing own profile from sidebar, use current user ID
       final targetUserId =
           widget.userId == _currentUserId ? _currentUserId : widget.userId;
 
-      final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/users/$targetUserId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final userData = json.decode(response.body);
-
-        if (userData != null) {
-          setState(() {
-            _userData = userData;
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _error = 'User not found';
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _error = 'Failed to load user data';
-          _isLoading = false;
-        });
+      // Try local API first
+      final localResponse = await _fetchFromApi(Config.localApiUrl, targetUserId);
+      if (localResponse.statusCode == 200) {
+        _handleSuccessResponse(localResponse);
+        return;
       }
+
+      // If local fails, try remote API
+      final remoteResponse = await _fetchFromApi(Config.remoteApiUrl, targetUserId);
+      if (remoteResponse.statusCode == 200) {
+        _handleSuccessResponse(remoteResponse);
+        return;
+      }
+
+      setState(() {
+        _error = 'Failed to load user data';
+        _isLoading = false;
+      });
+
     } catch (e) {
       setState(() {
         _error = 'Error fetching user data: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<http.Response> _fetchFromApi(String apiUrl, int targetUserId) {
+    return http.get(
+      Uri.parse('$apiUrl/api/users/$targetUserId'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+  }
+
+  void _handleSuccessResponse(http.Response response) {
+    final userData = json.decode(response.body);
+    if (userData != null) {
+      setState(() {
+        _userData = userData;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _error = 'User not found';
         _isLoading = false;
       });
     }

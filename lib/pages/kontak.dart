@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config.dart';
 import 'isichat.dart';
 
 class KontakPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class _KontakPageState extends State<KontakPage> {
   late int _loggedInUserId;
   bool _isLoading = true;
   String _error = '';
+  String get apiUrl => Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
 
   @override
   void initState() {
@@ -51,7 +53,7 @@ class _KontakPageState extends State<KontakPage> {
   Future<void> _fetchUsers() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/users'),
+        Uri.parse('$apiUrl/api/users'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -160,7 +162,7 @@ class _KontakPageState extends State<KontakPage> {
                       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
                         leading: FutureBuilder<http.Response>(
-                          future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${user['id_users']}')),
+                          future: http.get(Uri.parse('$apiUrl/api/users/${user['id_users']}')),
                           builder: (context, snapshot) {
                             if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                               final userData = json.decode(snapshot.data!.body);

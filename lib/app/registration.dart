@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config.dart';
 import 'auth.dart';
 
 class RegistrationPage extends StatefulWidget {
@@ -41,32 +42,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('http://192.168.1.7:3000/api/registrations'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'nomor_hp': phoneNumber,
-          'username': username,
-          'password': password,
-        }),
-      );
-
+      // Try local API first
+      final response = await _attemptRegistration(Config.localApiUrl);
       if (response.statusCode == 201) {
-        final Map<String, dynamic> responseBody = json.decode(response.body);
-        final String successMessage = responseBody['message'] ?? 'Registration successful';
-        final int userId = responseBody['id_users'] ?? -1;
-        _showSnackBar('$successMessage (User ID: $userId)');
-        // ignore: use_build_context_synchronously
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AuthPage()),
-        );
-      } else {
-        final Map<String, dynamic> responseBody = json.decode(response.body);
-        final String errorMessage = responseBody['error'] ?? 'Registration failed. Please try again.';
-        _showSnackBar(errorMessage);
+        await _handleSuccessfulRegistration(response);
+        return;
       }
+      // If local fails, try remote API
+      final remoteResponse = await _attemptRegistration(Config.remoteApiUrl);
+      if (remoteResponse.statusCode == 201) {
+        await _handleSuccessfulRegistration(remoteResponse);
+        return;
+      }
+
+      // Both attempts failed
+      _handleRegistrationError(remoteResponse);
+
     } catch (e) {
       _showSnackBar('An error occurred: $e');
     } finally {
@@ -74,6 +65,36 @@ class _RegistrationPageState extends State<RegistrationPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<http.Response> _attemptRegistration(String apiUrl) async {
+    return await http.post(
+      Uri.parse('$apiUrl/api/registrations'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'nomor_hp': _phoneController.text,
+        'username': _usernameController.text,
+        'password': _passwordController.text,
+      }),
+    );
+  }
+
+  Future<void> _handleSuccessfulRegistration(http.Response response) async {
+    final Map<String, dynamic> responseBody = json.decode(response.body);
+    final String successMessage = responseBody['message'] ?? 'Registration successful';
+    final int userId = responseBody['id_users'] ?? -1;
+    _showSnackBar('$successMessage (User ID: $userId)');
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const AuthPage()),
+    );
+  }
+
+  void _handleRegistrationError(http.Response response) {
+    final Map<String, dynamic> responseBody = json.decode(response.body);
+    final String errorMessage = responseBody['error'] ?? 'Registration failed. Please try again.';
+    _showSnackBar(errorMessage);
   }
 
   void _showSnackBar(String message) {

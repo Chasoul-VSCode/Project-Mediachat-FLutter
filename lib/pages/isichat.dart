@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../config.dart';
 import 'about.dart';
 import 'isicall.dart';
 
@@ -26,25 +27,31 @@ class IsiChatPage extends StatefulWidget {
 class _IsiChatPageState extends State<IsiChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
-  late int _userId; // Changed to late since we'll initialize in initState
+  late int _userId;
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   String? _forUserProfileImage;
+  String get apiUrl => Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
 
   @override
   void initState() {
     super.initState();
-    _userId = widget.userId; // Initialize _userId with widget.userId immediately
-    _loadUserId(); // Still call this to check for stored userId
+    _userId = widget.userId;
+    _loadUserId();
     _fetchChatMessages();
     _fetchForUserProfile();
-    // Start auto refresh when page initializes
     _startAutoRefresh();
   }
 
   Future<void> _fetchForUserProfile() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/${widget.userId}'));
+      final response = await http.get(
+        Uri.parse('$apiUrl/api/users/${widget.userId}'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+      
       if (response.statusCode == 200) {
         final userData = json.decode(response.body);
         setState(() {
@@ -57,12 +64,11 @@ class _IsiChatPageState extends State<IsiChatPage> {
   }
 
   void _startAutoRefresh() {
-    // Refresh every 3 seconds
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 3));
-      if (!mounted) return false; // Stop if widget is disposed
+      if (!mounted) return false;
       await _fetchChatMessages();
-      return true; // Continue the loop
+      return true;
     });
   }
 
@@ -77,11 +83,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
       }
     } catch (e) {
       print('Error loading userId: $e');
-      // Keep using widget.userId if there's an error
     }
   }
-
-  
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -127,10 +130,9 @@ class _IsiChatPageState extends State<IsiChatPage> {
                 try {
                   var request = http.MultipartRequest(
                     'POST',
-                    Uri.parse('http://192.168.1.7:3000/api/chats'),
+                    Uri.parse('$apiUrl/api/chats'),
                   );
 
-                  // Ensure _userId is included and not null
                   request.fields['id_users'] = _userId.toString();
                   request.fields['chat'] = 'tidak ada';
                   request.fields['for_users'] = widget.userId.toString();
@@ -142,22 +144,18 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     return;
                   }
 
-                  // Buat nama file unik dengan timestamp
                   String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
                   String extension = path.extension(_selectedImage!.path);
                   String filename = '$timestamp$extension';
 
-                  // Get application documents directory
                   Directory appDocDir = await getApplicationDocumentsDirectory();
                   String imagesPath = '${appDocDir.path}/images';
                   Directory imagesDir = Directory(imagesPath);
                   
-                  // Create images directory if it doesn't exist
                   if (!await imagesDir.exists()) {
                     await imagesDir.create(recursive: true);
                   }
 
-                  // Copy file to app documents directory
                   File newImage = await _selectedImage!.copy('$imagesPath/$filename');
 
                   var multipartFile = await http.MultipartFile.fromPath(
@@ -185,12 +183,11 @@ class _IsiChatPageState extends State<IsiChatPage> {
                           userName: 'Me', 
                           chatId: responseData['id_chat'],
                           onDelete: () {},
-                          imageUrl: 'http://192.168.1.7:3000/images/$filename',
+                          imageUrl: '$apiUrl/images/$filename',
                         ),
                       );
                     });
                     
-                    // Refresh messages to show new image with server data
                     _fetchChatMessages();
                   } else {
                     print('Failed to upload image: ${response.statusCode}');
@@ -206,7 +203,6 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   );
                 }
 
-                // Clear selected image
                 setState(() {
                   _selectedImage = null;
                 });
@@ -223,33 +219,27 @@ class _IsiChatPageState extends State<IsiChatPage> {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.1.7:3000/api/chats'),
+        Uri.parse('$apiUrl/api/chats'),
       );
 
-      // Add text fields using _userId
       request.fields['id_users'] = _userId.toString();
       request.fields['chat'] = 'tidak ada';
       request.fields['for_users'] = widget.userId.toString();
 
-      // Buat nama file unik dengan timestamp
       String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       String extension = path.extension(imageFile.path);
       String filename = '$timestamp$extension';
 
-      // Get application documents directory
       Directory appDocDir = await getApplicationDocumentsDirectory();
       String imagesPath = '${appDocDir.path}/images';
       Directory imagesDir = Directory(imagesPath);
       
-      // Create images directory if it doesn't exist
       if (!await imagesDir.exists()) {
         await imagesDir.create(recursive: true);
       }
 
-      // Copy file to app documents directory
       File newImage = await imageFile.copy('$imagesPath/$filename');
 
-      // Add the image file
       var multipartFile = await http.MultipartFile.fromPath(
         'images',
         newImage.path,
@@ -262,7 +252,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
       if (response.statusCode == 201) {
         final responseData = json.decode(response.body);
-        _fetchChatMessages(); // Refresh messages to show new image
+        _fetchChatMessages();
       } else {
         print('Failed to upload image: ${response.statusCode}');
         print('Response body: ${response.body}');
@@ -293,19 +283,25 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Future<void> _fetchChatMessages() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/chats'));
+      final response = await http.get(
+        Uri.parse('$apiUrl/api/chats'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Chats fetched successfully') {
           final chatsData = data['data'] as List;
           setState(() {
-            _messages.clear(); // Clear existing messages
+            _messages.clear();
             for (var chatData in chatsData) {
               if ((chatData['id_users'] == _userId && chatData['for_users'] == widget.userId) ||
                   (chatData['for_users'] == _userId && chatData['id_users'] == widget.userId)) {
                 String? imageUrl;
                 if (chatData['images'] != 'NoImages') {
-                  imageUrl = 'http://192.168.1.7:3000/images/${chatData['images']}';
+                  imageUrl = '$apiUrl/images/${chatData['images']}';
                 }
                 _messages.add(ChatMessage(
                   text: chatData['chat'],
@@ -331,7 +327,10 @@ class _IsiChatPageState extends State<IsiChatPage> {
   Future<void> _deleteMessage(int chatId) async {
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.1.7:3000/api/chats/$chatId'),
+        Uri.parse('$apiUrl/api/chats/$chatId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -377,7 +376,12 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   FutureBuilder<http.Response>(
-                    future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${widget.userId}')),
+                    future: http.get(
+                      Uri.parse('$apiUrl/api/users/${widget.userId}'),
+                      headers: <String, String>{
+                        'Content-Type': 'application/json; charset=UTF-8',
+                      },
+                    ),
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                         final userData = json.decode(snapshot.data!.body);
@@ -480,7 +484,6 @@ class _IsiChatPageState extends State<IsiChatPage> {
           IconButton(
             icon: Icon(Icons.mic, color: widget.isDarkMode ? Colors.white70 : Colors.blue.shade400, size: 18),
             onPressed: () {
-              // TODO: Implement voice note recording functionality
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Voice note feature coming soon!')),
               );
@@ -506,7 +509,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
     try {
       final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
       final response = await http.post(
-        Uri.parse('http://192.168.1.7:3000/api/chats'),
+        Uri.parse('$apiUrl/api/chats'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -595,7 +598,7 @@ class ChatMessage extends StatelessWidget {
         mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isMe) CircleAvatar(radius: 12, backgroundColor: Colors.blue),
+          if (!isMe) const CircleAvatar(radius: 12, backgroundColor: Colors.blue),
           if (!isMe) const SizedBox(width: 6),
           Flexible(
             child: Column(

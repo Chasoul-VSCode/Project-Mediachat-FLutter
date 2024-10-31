@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import '../config.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -47,7 +48,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _fetchUserData() async {
-    final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/$_userId'));
+    final String apiUrl = Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
+    final response = await http.get(Uri.parse('$apiUrl/api/users/$_userId'));
     if (response.statusCode == 200) {
       final userData = json.decode(response.body);
       setState(() {
@@ -152,7 +154,8 @@ class _ProfilePageState extends State<ProfilePage> {
     } else if (_profileImageUrl != null && _profileImageUrl!.startsWith('data:image')) {
       return MemoryImage(base64Decode(_profileImageUrl!.split(',')[1]));
     } else if (_userId.isNotEmpty) {
-      return NetworkImage('http://192.168.1.7:3000/api/users/$_userId/profile-image');
+      final String apiUrl = Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
+      return NetworkImage('$apiUrl/api/users/$_userId/profile-image');
     }
     return const AssetImage('./images/default-profile.jpg');
   }
@@ -170,8 +173,9 @@ class _ProfilePageState extends State<ProfilePage> {
         final bytes = await image.readAsBytes();
         final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
+        final String apiUrl = Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
         final response = await http.put(
-          Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
+          Uri.parse('$apiUrl/api/users/$_userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -261,8 +265,9 @@ class _ProfilePageState extends State<ProfilePage> {
               child: const Text('Save'),
               onPressed: () async {
                 if (newName.isNotEmpty) {
+                  final String apiUrl = Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
                   final response = await http.put(
-                    Uri.parse('http://192.168.1.7:3000/api/users/$_userId'),
+                    Uri.parse('$apiUrl/api/users/$_userId'),
                     headers: <String, String>{
                       'Content-Type': 'application/json; charset=UTF-8',
                     },

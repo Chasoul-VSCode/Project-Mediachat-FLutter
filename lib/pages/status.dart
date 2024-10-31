@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../config.dart';
 
 class StatusPage extends StatefulWidget {
   final bool isDarkMode;
@@ -21,6 +22,7 @@ class _StatusPageState extends State<StatusPage> {
   String? profileImageUrl;
   final TextEditingController _captionController = TextEditingController();
   bool isLoading = false;
+  String get apiUrl => Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
 
   @override
   void initState() {
@@ -61,7 +63,7 @@ class _StatusPageState extends State<StatusPage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/status'),
+        Uri.parse('$apiUrl/api/status'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -112,7 +114,7 @@ class _StatusPageState extends State<StatusPage> {
       }
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.7:3000/api/status'),
+        Uri.parse('$apiUrl/api/status'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'id_users': currentUserId,
@@ -219,7 +221,7 @@ class _StatusPageState extends State<StatusPage> {
       return MemoryImage(base64Decode(base64Image));
     } else if (imageUrl != null && imageUrl != 'NoImages') {
       // Handle image URL
-      return NetworkImage('http://192.168.1.7:3000/images/$imageUrl');
+      return NetworkImage('$apiUrl/images/$imageUrl');
     }
     return const AssetImage('./images/default-profile.jpg');
   }

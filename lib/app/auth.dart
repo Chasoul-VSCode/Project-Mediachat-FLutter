@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:project_chatapp_flutter/app/registration.dart';
+import '../config.dart';
 import 'profile.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -18,14 +19,46 @@ class _AuthPageState extends State<AuthPage> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _useLocalApi = true;
 
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
     });
 
-    final response = await http.post(
-      Uri.parse('http://192.168.1.7:3000/api/login'),
+    try {
+      // Try local API first
+      final response = await _attemptLogin(Config.localApiUrl);
+      if (response.statusCode == 200) {
+        await _handleSuccessfulLogin(response);
+        return;
+      }
+
+      // If local fails, try remote API
+      final remoteResponse = await _attemptLogin(Config.remoteApiUrl);
+      if (remoteResponse.statusCode == 200) {
+        await _handleSuccessfulLogin(remoteResponse);
+        return;
+      }
+
+      // Both attempts failed
+      _handleLoginError(remoteResponse);
+
+    } catch (e) {
+      print('Login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connection error. Please check your internet connection.')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<http.Response> _attemptLogin(String apiUrl) async {
+    return await http.post(
+      Uri.parse('$apiUrl/api/login'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
@@ -34,35 +67,32 @@ class _AuthPageState extends State<AuthPage> {
         'password': _passwordController.text,
       }),
     );
+  }
 
-    setState(() {
-      _isLoading = false;
-    });
+  Future<void> _handleSuccessfulLogin(http.Response response) async {
+    final responseData = jsonDecode(response.body);
+    print('Login successful: ${responseData['message']}');
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userId', responseData['user']['id_users'].toString());
+      await prefs.setString('username', responseData['user']['username'] ?? '');
+      await prefs.setString('profileImage', responseData['user']['images_profile'] ?? '');
+    } catch (e) {
+      print('Error saving user data to SharedPreferences: $e');
+    }
+    
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const ProfilePage()),
+    );
+  }
 
-    if (response.statusCode == 200) {
-      // Login successful
-      final responseData = jsonDecode(response.body);
-      print('Login successful: ${responseData['message']}');
-      
-      // Save user ID to SharedPreferences
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', responseData['user']['id_users'].toString());
-      } catch (e) {
-        print('Error saving user ID to SharedPreferences: $e');
-        // Handle the error, maybe show a message to the user
-      }
-      
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      );
-    } else if (response.statusCode == 401) {
-      // Unauthorized - Invalid credentials
+  void _handleLoginError(http.Response response) {
+    if (response.statusCode == 401) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid phone number or password')),
       );
     } else {
-      // Other errors
       print('Login failed with status code: ${response.statusCode}');
       print('Response body: ${response.body}');
       ScaffoldMessenger.of(context).showSnackBar(

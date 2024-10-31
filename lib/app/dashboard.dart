@@ -9,6 +9,7 @@ import 'auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config.dart';
 
 class DashboardPage extends StatefulWidget {
   final int userId;
@@ -41,17 +42,38 @@ class _DashboardPageState extends State<DashboardPage> {
         return;
       }
 
-      final response = await http.get(Uri.parse('http://192.168.1.7:3000/api/users/$userId'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          username = data['username'] ?? '';
-          phoneNumber = data['nomor_hp'] ?? '';
-          profileImageUrl = data['images_profile'];
-        });
-      } else {
-        print('Failed to load user data: ${response.statusCode}');
+      // Try local API first
+      try {
+        final response = await http.get(Uri.parse('${Config.localApiUrl}/api/users/$userId'));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          setState(() {
+            username = data['username'] ?? '';
+            phoneNumber = data['nomor_hp'] ?? '';
+            profileImageUrl = data['images_profile'];
+          });
+          return;
+        }
+      } catch (e) {
+        print('Local API error: $e');
       }
+
+      // If local fails, try remote API
+      try {
+        final response = await http.get(Uri.parse('${Config.remoteApiUrl}/api/users/$userId'));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          setState(() {
+            username = data['username'] ?? '';
+            phoneNumber = data['nomor_hp'] ?? '';
+            profileImageUrl = data['images_profile'];
+          });
+          return;
+        }
+      } catch (e) {
+        print('Remote API error: $e');
+      }
+
     } catch (e) {
       print('Error fetching user data: $e');
     }
@@ -99,17 +121,38 @@ class _DashboardPageState extends State<DashboardPage> {
                 SharedPreferences prefs = await SharedPreferences.getInstance();
                 String? userId = prefs.getString('userId');
                 if (userId != null) {
-                  final response = await http.post(
-                    Uri.parse('http://192.168.1.7:3000/api/logout/$userId')
-                  );
-                  if (response.statusCode == 200) {
-                    await prefs.remove('userId');
-                    // ignore: use_build_context_synchronously
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const AuthPage()),
+                  // Try local API first
+                  try {
+                    final response = await http.post(
+                      Uri.parse('${Config.localApiUrl}/api/logout/$userId')
                     );
-                  } else {
-                    print('Failed to logout: ${response.statusCode}');
+                    if (response.statusCode == 200) {
+                      await prefs.remove('userId');
+                      // ignore: use_build_context_synchronously
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const AuthPage()),
+                      );
+                      return;
+                    }
+                  } catch (e) {
+                    print('Local logout failed: $e');
+                  }
+
+                  // If local fails, try remote API
+                  try {
+                    final response = await http.post(
+                      Uri.parse('${Config.remoteApiUrl}/api/logout/$userId')
+                    );
+                    if (response.statusCode == 200) {
+                      await prefs.remove('userId');
+                      // ignore: use_build_context_synchronously
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const AuthPage()),
+                      );
+                      return;
+                    }
+                  } catch (e) {
+                    print('Remote logout failed: $e');
                   }
                 }
               },

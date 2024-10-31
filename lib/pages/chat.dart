@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config.dart';
 import 'isichat.dart';
 import 'kontak.dart';
 
@@ -31,6 +32,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   bool _isLoading = false;
   final Map<int, int> _unreadMessages = {};
   final Map<int, bool> _messageReadStatus = {};
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
@@ -43,17 +45,48 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _loadUserId();
     
     Future.delayed(Duration.zero, () {
-      _startAutoRefresh();
+      _startCheckNewMessages();
     });
   }
 
-  void _startAutoRefresh() {
+  void _startCheckNewMessages() {
     Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 60));
       if (!mounted) return false;
-      await _fetchChats();
+      
+      // Check for new messages without updating UI
+      final hasNewMessages = await _checkNewMessages();
+      if (hasNewMessages) {
+        await _fetchChats(); // Only fetch if there are new messages
+      }
+      
       return true;
     });
+  }
+
+  Future<bool> _checkNewMessages() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${Config.localApiUrl}/api/chats'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final allChats = data['data'] as List;
+        final currentMessageCount = allChats.where((chat) =>
+          chat['for_users'] == _loggedInUserId || chat['id_users'] == _loggedInUserId
+        ).length;
+
+        if (currentMessageCount != _lastMessageCount) {
+          _lastMessageCount = currentMessageCount;
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking new messages: $e');
+    }
+    return false;
   }
 
   Future<void> _loadUserId() async {
@@ -89,64 +122,37 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _isLoading = true;
       });
 
-      final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/chats')
+      // Try local API first
+      final localResponse = await http.get(
+        Uri.parse('${Config.localApiUrl}/api/chats'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final allChats = data['data'] as List;
-        
-        // Filter chats where either for_users or id_users matches logged in user ID
-        final filteredChats = allChats.where((chat) => 
-          chat['for_users'] == _loggedInUserId || chat['id_users'] == _loggedInUserId
-        ).toList();
-
-        filteredChats.sort((a, b) => 
-          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date']))
-        );
-
-        _unreadMessages.clear();
-        _messageReadStatus.clear();
-        
-        for (var chat in filteredChats) {
-          final otherUserId = chat['id_users'] == _loggedInUserId ? chat['for_users'] : chat['id_users'];
-          if (chat['read'] == false && chat['for_users'] == _loggedInUserId) {
-            _unreadMessages[otherUserId] = (_unreadMessages[otherUserId] ?? 0) + 1;
-            _messageReadStatus[chat['id_chat']] = false;
-          } else {
-            _messageReadStatus[chat['id_chat']] = true;
-          }
-        }
-
-        final Map<int, dynamic> uniqueChats = {};
-        for (var chat in filteredChats) {
-          final otherUserId = chat['id_users'] == _loggedInUserId ? chat['for_users'] : chat['id_users'];
-          if (!uniqueChats.containsKey(otherUserId)) {
-            uniqueChats[otherUserId] = {
-              ...chat,
-              'display_user_id': otherUserId // Store the ID of the other user for display
-            };
-          }
-        }
-
-        if (mounted) {
-          setState(() {
-            _chats = uniqueChats.values.toList()
-              ..sort((a, b) => 
-                DateTime.parse(b['date']).compareTo(DateTime.parse(a['date']))
-              );
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-        debugPrint('Failed to load chats: ${response.statusCode}');
+      if (localResponse.statusCode == 200) {
+        _handleChatsResponse(localResponse);
+        return;
       }
+
+      // If local fails, try remote API
+      final remoteResponse = await http.get(
+        Uri.parse('${Config.remoteApiUrl}/api/chats'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (remoteResponse.statusCode == 200) {
+        _handleChatsResponse(remoteResponse);
+        return;
+      }
+
+      debugPrint('Failed to load chats: ${remoteResponse.statusCode}');
+      setState(() {
+        _isLoading = false;
+      });
+
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -154,6 +160,54 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         });
       }
       debugPrint('Error fetching chats: $e');
+    }
+  }
+
+  void _handleChatsResponse(http.Response response) {
+    final data = json.decode(response.body);
+    final allChats = data['data'] as List;
+    
+    // Filter chats where either for_users or id_users matches logged in user ID
+    final filteredChats = allChats.where((chat) => 
+      chat['for_users'] == _loggedInUserId || chat['id_users'] == _loggedInUserId
+    ).toList();
+
+    filteredChats.sort((a, b) => 
+      DateTime.parse(b['date']).compareTo(DateTime.parse(a['date']))
+    );
+
+    _unreadMessages.clear();
+    _messageReadStatus.clear();
+    
+    for (var chat in filteredChats) {
+      final otherUserId = chat['id_users'] == _loggedInUserId ? chat['for_users'] : chat['id_users'];
+      if (chat['read'] == false && chat['for_users'] == _loggedInUserId) {
+        _unreadMessages[otherUserId] = (_unreadMessages[otherUserId] ?? 0) + 1;
+        _messageReadStatus[chat['id_chat']] = false;
+      } else {
+        _messageReadStatus[chat['id_chat']] = true;
+      }
+    }
+
+    final Map<int, dynamic> uniqueChats = {};
+    for (var chat in filteredChats) {
+      final otherUserId = chat['id_users'] == _loggedInUserId ? chat['for_users'] : chat['id_users'];
+      if (!uniqueChats.containsKey(otherUserId)) {
+        uniqueChats[otherUserId] = {
+          ...chat,
+          'display_user_id': otherUserId // Store the ID of the other user for display
+        };
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _chats = uniqueChats.values.toList()
+          ..sort((a, b) => 
+            DateTime.parse(b['date']).compareTo(DateTime.parse(a['date']))
+          );
+        _isLoading = false;
+      });
     }
   }
 
@@ -165,18 +219,34 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _isLoading = true;
       });
 
-      final response = await http.delete(
-        Uri.parse('http://192.168.1.7:3000/api/chats/$chatId'),
+      // Try local API first
+      final localResponse = await http.delete(
+        Uri.parse('${Config.localApiUrl}/api/chats/$chatId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
       );
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _chats.removeWhere((chat) => chat['id_chat'] == chatId);
-        });
-        await _fetchChats();
-      } else {
-        debugPrint('Failed to delete chat: ${response.statusCode}');
+      if (localResponse.statusCode == 200) {
+        _handleDeleteSuccess(chatId);
+        return;
       }
+
+      // If local fails, try remote API
+      final remoteResponse = await http.delete(
+        Uri.parse('${Config.remoteApiUrl}/api/chats/$chatId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (remoteResponse.statusCode == 200) {
+        _handleDeleteSuccess(chatId);
+        return;
+      }
+
+      debugPrint('Failed to delete chat: ${remoteResponse.statusCode}');
+
     } catch (e) {
       debugPrint('Error deleting chat: $e');
     } finally {
@@ -186,6 +256,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         });
       }
     }
+  }
+
+  void _handleDeleteSuccess(int chatId) {
+    setState(() {
+      _chats.removeWhere((chat) => chat['id_chat'] == chatId);
+    });
+    _fetchChats();
   }
 
   @override
@@ -311,7 +388,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             leading: Stack(
               children: [
                 FutureBuilder<http.Response>(
-                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')),
+                  future: _fetchUserData(chat['display_user_id']),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                       final userData = json.decode(snapshot.data!.body);
@@ -331,7 +408,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   },
                 ),
                 FutureBuilder<http.Response>(
-                  future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')),
+                  future: _fetchUserData(chat['display_user_id']),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                       final userData = json.decode(snapshot.data!.body);
@@ -362,7 +439,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               children: [
                 Expanded(
                   child: FutureBuilder<http.Response>(
-                    future: http.get(Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')),
+                    future: _fetchUserData(chat['display_user_id']),
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                         final userData = json.decode(snapshot.data!.body);
@@ -435,12 +512,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               vertical: 4
             ),
             onTap: () async {
-              final response = await http.get(
-                Uri.parse('http://192.168.1.7:3000/api/users/${chat['display_user_id']}')
-              );
+              final response = await _fetchUserData(chat['display_user_id']);
               
               if (response.statusCode == 200) {
                 final userData = json.decode(response.body);
+                if (!mounted) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -457,5 +533,34 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         );
       },
     );
+  }
+
+  Future<http.Response> _fetchUserData(int userId) async {
+    // Try local API first
+    try {
+      final localResponse = await http.get(
+        Uri.parse('${Config.localApiUrl}/api/users/$userId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (localResponse.statusCode == 200) {
+        return localResponse;
+      }
+
+      // If local fails, try remote API
+      final remoteResponse = await http.get(
+        Uri.parse('${Config.remoteApiUrl}/api/users/$userId'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      return remoteResponse;
+    } catch (e) {
+      // Return a fake response with error status
+      return http.Response('{"error": "Failed to fetch user data"}', 500);
+    }
   }
 }

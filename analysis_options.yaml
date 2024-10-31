@@ -9,7 +9,7 @@
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
   errors:
-    depend_on_referenced_packages: ignore ignore ignore ignore ignore
+    depend_on_referenced_packages: ignore
     unused_field: ignore
     unused_import: ignore
     unused_local_variable: ignore

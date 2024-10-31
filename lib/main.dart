@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'app/auth.dart';
+import 'config.dart';
 import 'pages/chat.dart';
 
 void main() async {
@@ -15,24 +16,23 @@ void main() async {
 
   if (userId != null) {
     try {
-      final response = await http.get(
-        Uri.parse('http://192.168.1.7:3000/api/users/$userId')
+      // Try local API first
+      final localResponse = await http.get(
+        Uri.parse('${Config.localApiUrl}/api/users/$userId')
       );
-      
-      if (response.statusCode == 200) {
-        final userData = json.decode(response.body);
-        // Check user status
-        if (userData['status'] == 1) {
-          // Redirect to ChatPage if status is 1
-          initialPage = ChatPage(
-            userId: int.parse(userId), 
-            isDarkMode: isDarkMode
-          );
-        } else if (userData['status'] == 0) {
-          // Redirect to AuthPage if status is 0
-          initialPage = const AuthPage();
-          // Clear stored userId since we're logging out
-          await prefs.remove('userId');
+
+      if (localResponse.statusCode == 200) {
+        Config.isLocal = true;
+        _handleUserResponse(localResponse, userId, isDarkMode, prefs);
+      } else if (Config.isLocal == false){
+        // If local fails, try remote API
+        final remoteResponse = await http.get(
+          Uri.parse('${Config.remoteApiUrl}/api/users/$userId')
+        );
+
+        if (remoteResponse.statusCode == 200) {
+          Config.isLocal = false;
+          _handleUserResponse(remoteResponse, userId, isDarkMode, prefs);
         }
       }
     } catch (e) {
@@ -41,6 +41,23 @@ void main() async {
   }
 
   runApp(MyApp(initialPage: initialPage));
+}
+
+void _handleUserResponse(http.Response response, String userId, bool isDarkMode, SharedPreferences prefs) {
+  final userData = json.decode(response.body);
+  // Check user status
+  if (userData['status'] == 1) {
+    // Redirect to ChatPage if status is 1
+    var initialPage = ChatPage(
+      userId: int.parse(userId),
+      isDarkMode: isDarkMode
+    );
+  } else if (userData['status'] == 0) {
+    // Redirect to AuthPage if status is 0
+    var initialPage = const AuthPage();
+    // Clear stored userId since we're logging out
+    prefs.remove('userId');
+  }
 }
 
 class MyApp extends StatelessWidget {
