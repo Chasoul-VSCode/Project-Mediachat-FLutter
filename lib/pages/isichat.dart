@@ -31,7 +31,10 @@ class _IsiChatPageState extends State<IsiChatPage> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   String? _forUserProfileImage;
+
+
   String get apiUrl => Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
+  
 
   @override
   void initState() {
@@ -97,6 +100,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
   }
 
   void _showImagePreview() {
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -119,24 +124,15 @@ class _IsiChatPageState extends State<IsiChatPage> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.pop(context);
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                Navigator.pop(context);
 
                 try {
-                  var request = http.MultipartRequest(
-                    'POST',
-                    Uri.parse('$apiUrl/api/chats'),
-                  );
-
-                  request.fields['id_users'] = _userId.toString();
-                  request.fields['chat'] = 'tidak ada';
-                  request.fields['for_users'] = widget.userId.toString();
-
                   if (_selectedImage == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('No image selected')),
@@ -149,7 +145,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   String filename = '$timestamp$extension';
 
                   Directory appDocDir = await getApplicationDocumentsDirectory();
-                  String imagesPath = '${appDocDir.path}/images';
+                  String imagesPath = '${appDocDir.path}/images_chat';
                   Directory imagesDir = Directory(imagesPath);
                   
                   if (!await imagesDir.exists()) {
@@ -157,6 +153,15 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   }
 
                   File newImage = await _selectedImage!.copy('$imagesPath/$filename');
+
+                  var request = http.MultipartRequest(
+                    'POST',
+                    Uri.parse('$apiUrl/api/chats/images'),
+                  );
+
+                  request.fields['id_users'] = _userId.toString();
+                  request.fields['for_users'] = widget.userId.toString();
+                  request.fields['date'] = DateTime.now().toUtc().add(const Duration(hours: 7)).toIso8601String();
 
                   var multipartFile = await http.MultipartFile.fromPath(
                     'images',
@@ -172,6 +177,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
                     final responseData = json.decode(response.body);
                     final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
                     
+                    if (!mounted) return;
+                    
                     setState(() {
                       _messages.insert(
                         0,
@@ -183,7 +190,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
                           userName: 'Me', 
                           chatId: responseData['id_chat'],
                           onDelete: () {},
-                          imageUrl: '$apiUrl/images/$filename',
+                          imageUrl: '$apiUrl/images_chat/$filename',
                         ),
                       );
                     });
@@ -192,17 +199,20 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   } else {
                     print('Failed to upload image: ${response.statusCode}');
                     print('Response body: ${response.body}');
+                    if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Failed to send image: ${response.body}')),
                     );
                   }
                 } catch (e) {
                   print('Error uploading image: $e');
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Error sending image: $e')),
                   );
                 }
 
+                if (!mounted) return;
                 setState(() {
                   _selectedImage = null;
                 });
@@ -219,19 +229,20 @@ class _IsiChatPageState extends State<IsiChatPage> {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$apiUrl/api/chats'),
+        Uri.parse('$apiUrl/api/chats/images'),
       );
 
       request.fields['id_users'] = _userId.toString();
       request.fields['chat'] = 'tidak ada';
       request.fields['for_users'] = widget.userId.toString();
+      request.fields['date'] = DateTime.now().toUtc().add(const Duration(hours: 7)).toIso8601String();
 
       String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       String extension = path.extension(imageFile.path);
       String filename = '$timestamp$extension';
 
       Directory appDocDir = await getApplicationDocumentsDirectory();
-      String imagesPath = '${appDocDir.path}/images';
+      String imagesPath = '${appDocDir.path}/images_chat';
       Directory imagesDir = Directory(imagesPath);
       
       if (!await imagesDir.exists()) {
@@ -257,7 +268,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
         print('Failed to upload image: ${response.statusCode}');
         print('Response body: ${response.body}');
       }
-    } catch (e) {
+        } catch (e) {
       print('Error uploading image: $e');
     }
   }
@@ -301,7 +312,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
                   (chatData['for_users'] == _userId && chatData['id_users'] == widget.userId)) {
                 String? imageUrl;
                 if (chatData['images'] != 'NoImages') {
-                  imageUrl = '$apiUrl/images/${chatData['images']}';
+                  imageUrl = '$apiUrl/images_chat/${chatData['images']}';
                 }
                 _messages.add(ChatMessage(
                   text: chatData['chat'],
@@ -342,6 +353,8 @@ class _IsiChatPageState extends State<IsiChatPage> {
       print('Error deleting message: $e');
     }
   }
+
+  
 
   @override
   Widget build(BuildContext context) {

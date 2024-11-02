@@ -268,7 +268,7 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             ChatPage(isDarkMode: isDarkMode, userId: widget.userId),
             StatusPage(isDarkMode: isDarkMode),
-            GroupPage(isDarkMode: isDarkMode, userId: widget.userId),
+            CommunityPage(isDarkMode: isDarkMode),
             CallPage(isDarkMode: isDarkMode),
           ],
         ),

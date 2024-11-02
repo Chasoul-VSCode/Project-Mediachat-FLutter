@@ -33,6 +33,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   final Map<int, int> _unreadMessages = {};
   final Map<int, bool> _messageReadStatus = {};
   int _lastMessageCount = 0;
+  final RefreshController _refreshController = RefreshController();
 
   @override
   void initState() {
@@ -51,7 +52,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   void _startCheckNewMessages() {
     Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 60));
+      await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
       
       // Check for new messages without updating UI
@@ -100,6 +101,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _controller.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 
@@ -112,6 +114,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         _controller.reverse();
       }
     });
+  }
+
+  Future<void> _onRefresh() async {
+    await _fetchChats();
+    _refreshController.refreshCompleted();
   }
 
   Future<void> _fetchChats() async {
@@ -307,7 +314,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           Expanded(
             child: _isLoading 
               ? const Center(child: CircularProgressIndicator())
-              : _buildChatTab(),
+              : RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: _buildChatTab(),
+                ),
           ),
         ],
       ),
@@ -563,4 +573,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       return http.Response('{"error": "Failed to fetch user data"}', 500);
     }
   }
+}
+
+class RefreshController {
+  void refreshCompleted() {}
+  
+  void dispose() {}
 }
