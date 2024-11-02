@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 import 'dart:async';
 
+import 'isicommunity.dart';
+
 class CommunityPage extends StatefulWidget {
   final bool isDarkMode;
 
@@ -294,7 +296,17 @@ class _CommunityPageState extends State<CommunityPage> {
             child: Icon(Icons.group, color: widget.isDarkMode ? Colors.grey[300] : Colors.grey[700], size: 18),
           ),
           title: Text('Join Group', style: TextStyle(fontSize: 13, color: widget.isDarkMode ? Colors.white : Colors.black)),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => IsiCommunityPage(
+                  isDarkMode: widget.isDarkMode,
+                  communityId: communityId,
+                ),
+              ),
+            );
+          },
           contentPadding: const EdgeInsets.symmetric(vertical: 4),
         ),
         
