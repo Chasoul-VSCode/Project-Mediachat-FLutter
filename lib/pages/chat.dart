@@ -422,7 +422,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.statusCode == 200) {
                       final userData = json.decode(snapshot.data!.body);
-                      final bool isOnline = userData['status'] == 1;
+                      final bool isOnline = userData['status'].toString() == '1';
                       return Positioned(
                         right: 0,
                         top: 0,

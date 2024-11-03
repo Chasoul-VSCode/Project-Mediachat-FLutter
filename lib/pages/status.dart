@@ -23,6 +23,7 @@ class _StatusPageState extends State<StatusPage> {
   final TextEditingController _captionController = TextEditingController();
   bool isLoading = false;
   String get apiUrl => Config.isLocal ? Config.localApiUrl : Config.remoteApiUrl;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -34,6 +35,12 @@ class _StatusPageState extends State<StatusPage> {
     Future.delayed(Duration.zero, () {
       _startAutoRefresh();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _startAutoRefresh() {
@@ -78,7 +85,8 @@ class _StatusPageState extends State<StatusPage> {
                 'username': status['username'] ?? 'Unknown',
                 'caption': status['caption'],
                 'date': status['date'],
-                'images_profile': status['images_profile']
+                'images_profile': status['images_profile'],
+                'images_status': status['images_status']
               };
             }).toList();
           });
@@ -118,7 +126,7 @@ class _StatusPageState extends State<StatusPage> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'id_users': currentUserId,
-          'images': base64Image ?? 'NoImages',
+          'images_status': base64Image ?? 'NoImages',
           'caption': caption ?? ''
         }),
       );
@@ -136,6 +144,7 @@ class _StatusPageState extends State<StatusPage> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     
     if (image != null) {
+      // Show caption dialog after picking image
       _showCaptionDialog(imagePath: image.path);
     }
   }
@@ -149,7 +158,7 @@ class _StatusPageState extends State<StatusPage> {
         ),
         backgroundColor: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         title: Text(
-          'Add Caption',
+          'Add Caption (Optional)',
           style: TextStyle(
             color: widget.isDarkMode ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
@@ -165,7 +174,7 @@ class _StatusPageState extends State<StatusPage> {
           decoration: InputDecoration(
             filled: true,
             fillColor: widget.isDarkMode ? const Color(0xFF2D2D2D) : Colors.grey[100],
-            hintText: 'Enter caption...',
+            hintText: 'Enter caption (optional)...',
             hintStyle: TextStyle(
               color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600],
               fontSize: 14,
@@ -183,8 +192,12 @@ class _StatusPageState extends State<StatusPage> {
             onPressed: () {
               Navigator.pop(context);
               _captionController.clear();
+              if (imagePath != null) {
+                // Post without caption if image exists
+                _postStatus(imagePath: imagePath);
+              }
             },
-            child: Text('Cancel', 
+            child: Text('Skip', 
               style: TextStyle(
                 color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600],
                 fontSize: 14,
@@ -200,10 +213,11 @@ class _StatusPageState extends State<StatusPage> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             ),
             onPressed: () {
-              _postStatus(
-                imagePath: imagePath,
-                caption: _captionController.text,
-              );
+              if (imagePath != null) {
+                _postStatus(imagePath: imagePath, caption: _captionController.text);
+              } else {
+                _postStatus(caption: _captionController.text);
+              }
               Navigator.pop(context);
               _captionController.clear();
             },
@@ -222,6 +236,18 @@ class _StatusPageState extends State<StatusPage> {
     } else if (imageUrl != null && imageUrl != 'NoImages') {
       // Handle image URL
       return NetworkImage('$apiUrl/images/$imageUrl');
+    }
+    return const AssetImage('./images/default-profile.jpg');
+  }
+
+  ImageProvider _getStatusImage(String? imageUrl) {
+    if (imageUrl != null && imageUrl.startsWith('data:image')) {
+      // Handle base64 image data
+      String base64Image = imageUrl.split(',')[1];
+      return MemoryImage(base64Decode(base64Image));
+    } else if (imageUrl != null && imageUrl != 'NoImages') {
+      // Handle image URL
+      return NetworkImage('$apiUrl/images_status/$imageUrl');
     }
     return const AssetImage('./images/default-profile.jpg');
   }
@@ -300,10 +326,14 @@ class _StatusPageState extends State<StatusPage> {
       ),
       body: RefreshIndicator(
         onRefresh: _fetchStatuses,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Container(
+        child: ListView.builder(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: statuses.length + 1, // +1 for header
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              // Header section
+              return Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,82 +432,100 @@ class _StatusPageState extends State<StatusPage> {
                     ),
                   ],
                 ),
-              ),
-            ),
+              );
+            }
 
-            // Status List
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final status = statuses[index];
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.isDarkMode ? Colors.black12 : Colors.grey.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
+            // Status items
+            final status = statuses[index - 1];
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.isDarkMode ? Colors.black12 : Colors.grey.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    leading: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.teal,
+                          width: 1.5,
                         ),
-                      ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 22,
+                        backgroundImage: _getProfileImage(status['images_status']),
+                      ),
                     ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      leading: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.teal,
-                            width: 1.5,
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          status['username'] ?? 'Unknown',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: widget.isDarkMode ? Colors.white : Colors.black,
                           ),
                         ),
-                        child: CircleAvatar(
-                          radius: 22,
-                          backgroundImage: _getProfileImage(status['images_profile']),
-                        ),
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            status['username'] ?? 'Unknown',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: widget.isDarkMode ? Colors.white : Colors.black,
-                            ),
-                          ),
-                          Text(
-                            _formatTime(status['date']),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          status['caption'] ?? '',
+                        Text(
+                          _formatTime(status['date']),
                           style: TextStyle(
                             fontSize: 12,
                             color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
-                      ),
-                      onTap: () {
-                        // View status functionality
-                      },
+                      ],
                     ),
-                  );
-                },
-                childCount: statuses.length,
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        status['caption'] ?? '',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (status['images_status'] != null && status['images_status'] != 'NoImages')
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image(
+                          image: _getStatusImage(status['images_status']),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 200,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
