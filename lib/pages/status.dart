@@ -144,8 +144,8 @@ class _StatusPageState extends State<StatusPage> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     
     if (image != null) {
-      // Show caption dialog after picking image
-      _showCaptionDialog(imagePath: image.path);
+      // Langsung post image tanpa caption
+      _postStatus(imagePath: image.path);
     }
   }
 

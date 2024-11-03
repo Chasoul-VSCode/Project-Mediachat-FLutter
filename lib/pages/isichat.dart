@@ -520,7 +520,7 @@ class _IsiChatPageState extends State<IsiChatPage> {
 
   Future<void> _sendMessage(String message) async {
     try {
-      final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 7));
+      final jakartaTime = DateTime.now().toUtc().add(const Duration(hours: 24));
       final response = await http.post(
         Uri.parse('$apiUrl/api/chats'),
         headers: <String, String>{
