@@ -129,9 +129,11 @@ class _CommunityPageState extends State<CommunityPage> {
     } catch (e) {
       debugPrint('Error fetching communities: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

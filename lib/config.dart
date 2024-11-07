@@ -1,7 +1,7 @@
 class Config {
-  static const String localApiUrl = 'http://chasouluix.my.id:3000';
+  static const String localApiUrl = 'https://app.chasouluix.my.id';
 
-  static const String remoteApiUrl = 'http://chasouluix.my.id:3000';
+  static const String remoteApiUrl = 'https://app.chasouluix.my.id';
 
   static bool isLocal = true;
 
