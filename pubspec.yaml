@@ -1,4 +1,4 @@
-name: project_chatapp_flutter
+name: Kokit
 description: "A new Flutter project."
 publish_to: 'none'
 
@@ -20,6 +20,12 @@ dependencies:
   just_audio: ^0.9.41
   audioplayers: ^6.1.0
   web_socket_channel: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/Kokit.jpg"
 
 dev_dependencies:
   flutter_test:
@@ -31,5 +37,5 @@ flutter:
   assets:
     - assets/images/
 
-  # Untuk mengizinkan akses internet, tambahkan permission di android/app/src/main/AndroidManifest.xml:
+  # To allow internet access, add permission in android/app/src/main/AndroidManifest.xml:
   # <uses-permission android:name="android.permission.INTERNET"/>

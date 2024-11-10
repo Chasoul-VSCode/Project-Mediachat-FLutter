@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:project_chatapp_flutter/pages/call.dart';
-import 'package:project_chatapp_flutter/pages/community.dart';
+import 'package:Kokit/pages/call.dart';
+import 'package:Kokit/pages/community.dart';
 import '../pages/about.dart';
+import '../pages/call.dart';
 import '../pages/chat.dart';
+import '../pages/community.dart';
 import '../pages/group.dart';
 import '../pages/status.dart';
+import '../pages/event.dart';
+import '../pages/journal.dart';
 import 'auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -96,7 +100,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: Text('KoKit', 
@@ -203,17 +207,27 @@ class _DashboardPageState extends State<DashboardPage> {
                 title: Text('Profile', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {},
               ),
+             
               ListTile(
-                leading: Icon(Icons.group_add, size: 20, color: isDarkMode ? Colors.white : Colors.black),
-                title: Text('New Group', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                leading: Icon(Icons.event, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Events', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => GroupPage(
-                        isDarkMode: isDarkMode,
-                        userId: widget.userId,
-                      ),
+                      builder: (context) => EventPage(isDarkMode: isDarkMode),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.book, size: 20, color: isDarkMode ? Colors.white : Colors.black),
+                title: Text('Journal', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black)),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => JournalPage(isDarkMode: isDarkMode),
                     ),
                   );
                 },
@@ -269,7 +283,8 @@ class _DashboardPageState extends State<DashboardPage> {
             ChatPage(isDarkMode: isDarkMode, userId: widget.userId),
             StatusPage(isDarkMode: isDarkMode),
             CommunityPage(isDarkMode: isDarkMode),
-            CallPage(isDarkMode: isDarkMode),
+            EventPage(isDarkMode: isDarkMode),
+            JournalPage(isDarkMode: isDarkMode),
           ],
         ),
         bottomNavigationBar: Container(
@@ -280,7 +295,8 @@ class _DashboardPageState extends State<DashboardPage> {
               Tab(icon: Icon(Icons.chat, size: 20), text: 'Chat'),
               Tab(icon: Icon(Icons.circle, size: 20), text: 'Status'),
               Tab(icon: Icon(Icons.group, size: 20), text: 'Community'),
-              Tab(icon: Icon(Icons.call, size: 20), text: 'Call'),
+              Tab(icon: Icon(Icons.event, size: 20), text: 'Event'),
+              Tab(icon: Icon(Icons.book, size: 20), text: 'Journal'),
             ],
             labelColor: isDarkMode ? Colors.white : Colors.blue.shade400,
             unselectedLabelColor: isDarkMode ? Colors.grey[400] : Colors.grey,
